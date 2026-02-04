@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Đăng ký - Quản Lý Sức Khỏe</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+    <nav class="navbar navbar-expand-lg navbar-dark bg-primary">
+        <div class="container">
+            <a class="navbar-brand" href="../index.html">🏥 Quản Lý Sức Khỏe</a>
+            <div class="navbar-nav ms-auto">
+                <a class="nav-link" href="login.html">Đăng nhập</a>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container mt-5">
+        <div class="row justify-content-center">
+            <div class="col-md-6">
+                <div class="card shadow">
+                    <div class="card-header bg-primary text-white">
+                        <h4 class="mb-0">📝 Đăng ký tài khoản</h4>
+                    </div>
+                    <div class="card-body">
+                        <form id="registerForm">
+                            <div class="mb-3">
+                                <label class="form-label">Tên đăng nhập <span class="text-danger">*</span></label>
+                                <input type="text" class="form-control" id="tenDangNhap" required minlength="3" pattern="[a-zA-Z0-9_]+">
+                                <div class="invalid-feedback">
+                                    Tên đăng nhập chỉ được chứa chữ cái, số và dấu gạch dưới
+                                </div>
+                                <small class="text-muted">Tối thiểu 3 ký tự, chỉ chữ cái, số và dấu _</small>
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label">Email <span class="text-danger">*</span></label>
+                                <input type="email" class="form-control" id="email" required>
+                                <small class="text-muted">VD: user@example.com</small>
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label">Mật khẩu <span class="text-danger">*</span></label>
+                                <input type="password" class="form-control" id="matKhau" required minlength="6">
+                                <small class="text-muted">Tối thiểu 6 ký tự</small>
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label">Xác nhận mật khẩu <span class="text-danger">*</span></label>
+                                <input type="password" class="form-control" id="xacNhanMatKhau" required>
+                                <div class="invalid-feedback">
+                                    Mật khẩu xác nhận không khớp
+                                </div>
+                            </div>
+                            <div class="d-grid">
+                                <button type="submit" class="btn btn-primary btn-lg">
+                                    ✅ Đăng ký
+                                </button>
+                            </div>
+                        </form>
+                        <hr>
+                        <p class="text-center mb-0">
+                            Đã có tài khoản? <a href="login.html">Đăng nhập ngay</a>
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="../js/config.js"></script>
+    <script src="../js/register.js"></script>
+</body>
+</html>

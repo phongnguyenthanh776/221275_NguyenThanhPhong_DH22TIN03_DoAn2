@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test API</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+</head>
+<body>
+    <div class="container mt-5">
+        <h2>Test API - Đăng ký & Đăng nhập</h2>
+        
+        <div class="card mb-3">
+            <div class="card-header bg-success text-white">
+                <h5>Test Đăng ký</h5>
+            </div>
+            <div class="card-body">
+                <button class="btn btn-success" onclick="testRegister()">Test Register API</button>
+                <pre id="registerResult" class="mt-3 bg-light p-3"></pre>
+            </div>
+        </div>
+
+        <div class="card mb-3">
+            <div class="card-header bg-primary text-white">
+                <h5>Test Đăng nhập</h5>
+            </div>
+            <div class="card-body">
+                <button class="btn btn-primary" onclick="testLogin()">Test Login API</button>
+                <pre id="loginResult" class="mt-3 bg-light p-3"></pre>
+            </div>
+        </div>
+
+        <div class="card">
+            <div class="card-header bg-info text-white">
+                <h5>Test GET Users</h5>
+            </div>
+            <div class="card-body">
+                <button class="btn btn-info" onclick="testGetUsers()">Test GET API</button>
+                <pre id="getUsersResult" class="mt-3 bg-light p-3"></pre>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const API_URL = 'http://localhost:5000/api';
+
+        async function testRegister() {
+            const testUser = {
+                tenDangNhap: 'testuser' + Date.now(),
+                email: 'test' + Date.now() + '@example.com',
+                matKhau: '123456',
+                vaiTro: 'User'
+            };
+
+            document.getElementById('registerResult').textContent = 'Đang gửi request...';
+
+            try {
+                const response = await fetch(`${API_URL}/NguoiDung/register`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(testUser)
+                });
+
+                const data = await response.json();
+                
+                document.getElementById('registerResult').textContent = 
+                    'Status: ' + response.status + '\n' +
+                    'Request: ' + JSON.stringify(testUser, null, 2) + '\n\n' +
+                    'Response: ' + JSON.stringify(data, null, 2);
+            } catch (error) {
+                document.getElementById('registerResult').textContent = 
+                    'Error: ' + error.message + '\n\n' +
+                    'Chi tiết: ' + error.stack;
+            }
+        }
+
+        async function testLogin() {
+            const loginData = {
+                tenDangNhap: 'user1',
+                matKhau: '123456'
+            };
+
+            document.getElementById('loginResult').textContent = 'Đang gửi request...';
+
+            try {
+                const response = await fetch(`${API_URL}/NguoiDung/login`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(loginData)
+                });
+
+                const data = await response.json();
+                
+                document.getElementById('loginResult').textContent = 
+                    'Status: ' + response.status + '\n' +
+                    'Request: ' + JSON.stringify(loginData, null, 2) + '\n\n' +
+                    'Response: ' + JSON.stringify(data, null, 2);
+            } catch (error) {
+                document.getElementById('loginResult').textContent = 
+                    'Error: ' + error.message + '\n\n' +
+                    'Chi tiết: ' + error.stack;
+            }
+        }
+
+        async function testGetUsers() {
+            document.getElementById('getUsersResult').textContent = 'Đang gửi request...';
+
+            try {
+                const response = await fetch(`${API_URL}/NguoiDung`);
+                const data = await response.json();
+                
+                document.getElementById('getUsersResult').textContent = 
+                    'Status: ' + response.status + '\n' +
+                    'Response: ' + JSON.stringify(data, null, 2);
+            } catch (error) {
+                document.getElementById('getUsersResult').textContent = 
+                    'Error: ' + error.message + '\n\n' +
+                    'Chi tiết: ' + error.stack;
+            }
+        }
+    </script>
+</body>
+</html>
