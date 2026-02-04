@@ -121,6 +121,7 @@ E:\221275_NguyenThanhPhong_DH22TIN03_DoAn2\backend\obj\Debug\net8.0\backend.Asse
 E:\221275_NguyenThanhPhong_DH22TIN03_DoAn2\backend\obj\Debug\net8.0\backend.csproj.CoreCompileInputs.cache
 E:\221275_NguyenThanhPhong_DH22TIN03_DoAn2\backend\obj\Debug\net8.0\backend.MvcApplicationPartsAssemblyInfo.cs
 E:\221275_NguyenThanhPhong_DH22TIN03_DoAn2\backend\obj\Debug\net8.0\backend.MvcApplicationPartsAssemblyInfo.cache
+E:\221275_NguyenThanhPhong_DH22TIN03_DoAn2\backend\obj\Debug\net8.0\backend.sourcelink.json
 E:\221275_NguyenThanhPhong_DH22TIN03_DoAn2\backend\obj\Debug\net8.0\scopedcss\bundle\backend.styles.css
 E:\221275_NguyenThanhPhong_DH22TIN03_DoAn2\backend\obj\Debug\net8.0\staticwebassets.build.json
 E:\221275_NguyenThanhPhong_DH22TIN03_DoAn2\backend\obj\Debug\net8.0\staticwebassets.development.json

@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging;
 
 [ApiController]
 [Route("api/[controller]")]
@@ -7,88 +8,161 @@ public class AIController : ControllerBase
 {
     private readonly AppDbContext _context;
     private readonly AIService _aiService;
+    private readonly GoogleAIService _googleAIService;
+    private readonly ILogger<AIController> _logger;
 
-    public AIController(AppDbContext context)
+    public AIController(AppDbContext context, ILogger<AIController> logger, GoogleAIService googleAIService)
     {
         _context = context;
         _aiService = new AIService();
+        _googleAIService = googleAIService;
+        _logger = logger;
     }
 
     [HttpPost("phantich/{maNguoiDung}")]
-    public async Task<IActionResult> PhanTichSucKhoe(int maNguoiDung)
+    public async Task<IActionResult> PhanTichSucKhoe(int maNguoiDung, [FromQuery] bool useGemini = false)
     {
-        // Lấy thông tin cá nhân
-        var thongTin = await _context.ThongTinCaNhan
-            .FirstOrDefaultAsync(t => t.MaNguoiDung == maNguoiDung);
-
-        // Lấy chỉ số sức khỏe mới nhất
-        var chiSo = await _context.ChiSoSucKhoe
-            .Where(c => c.MaNguoiDung == maNguoiDung)
-            .OrderByDescending(c => c.NgayDo)
-            .FirstOrDefaultAsync();
-
-        if (thongTin == null || chiSo == null)
-            return BadRequest("Chưa đủ dữ liệu để phân tích");
-
-        // Tính BMI
-        double bmi = chiSo.CanNang.Value / Math.Pow(thongTin.ChieuCao.Value / 100, 2);
-
-        // Phân tích nguy cơ
-        double nguyCoTieuDuong = 0;
-        double nguyCoCaoHuyetAp = 0;
-
-        if (chiSo.DuongHuyet.HasValue)
+        try
         {
-            nguyCoTieuDuong = _aiService.TinhNguyCoTieuDuong(bmi, chiSo.DuongHuyet.Value, thongTin.Tuoi ?? 0);
-            
-            if (nguyCoTieuDuong > 0.5)
+            var thongTin = await _context.ThongTinCaNhan
+                .FirstOrDefaultAsync(t => t.MaNguoiDung == maNguoiDung);
+
+            var chiSo = await _context.ChiSoSucKhoe
+                .Where(c => c.MaNguoiDung == maNguoiDung)
+                .OrderByDescending(c => c.NgayDo)
+                .FirstOrDefaultAsync();
+
+            var thoiQuen = await _context.ThoiQuenSinhHoat
+                .Where(t => t.MaNguoiDung == maNguoiDung)
+                .OrderByDescending(t => t.MaThoiQuen)
+                .FirstOrDefaultAsync();
+
+            if (thongTin == null || chiSo == null)
+                return BadRequest(new { message = "Chưa đủ dữ liệu để phân tích" });
+
+            double bmi = chiSo.CanNang.Value / Math.Pow(thongTin.ChieuCao.Value / 100, 2);
+
+            string baoCaoAI;
+            string aiNguon;
+
+            if (useGemini && _googleAIService.IsConfigured())
             {
-                _context.NguyCoBenhLy.Add(new NguyCoBenhLy
-                {
-                    MaNguoiDung = maNguoiDung,
-                    TenBenh = "Tiểu đường",
-                    XacSuat = nguyCoTieuDuong,
-                    NgayDanhGia = DateTime.Now
-                });
-            }
-        }
+                string thongTinInput = $@"
+Thông tin người dùng:
+- Họ tên: {thongTin.HoTen}
+- Tuổi: {thongTin.Tuoi}
+- Giới tính: {thongTin.GioiTinh}
+- Chiều cao: {thongTin.ChieuCao} cm
+- Cân nặng: {chiSo.CanNang} kg
+- BMI: {bmi:F1}
+- Huyết áp: {chiSo.HuyetAp}
+- Nhịp tim: {chiSo.NhipTim} bpm
+- Đường huyết: {chiSo.DuongHuyet} mg/dL
+- Giờ ngủ: {thoiQuen?.SoGioNgu} giờ/ngày
+- Tập luyện: {thoiQuen?.ThoiGianTapLuyen} phút/ngày
+- Hút thuốc: {(thoiQuen?.HutThuoc ?? false ? "Có" : "Không")}
+";
 
-        if (!string.IsNullOrEmpty(chiSo.HuyetAp))
-        {
-            nguyCoCaoHuyetAp = _aiService.TinhNguyCoCaoHuyetAp(chiSo.HuyetAp, bmi, thongTin.Tuoi ?? 0);
-            
-            if (nguyCoCaoHuyetAp > 0.5)
+                var geminiResult = await _googleAIService.PhanTichSucKhoeAsync(thongTinInput);
+                
+                // Chỉ fallback nếu response bắt đầu bằng [
+                if (geminiResult.StartsWith("["))
+                {
+                    _logger.LogWarning($"Gemini error code: {geminiResult}. Falling back to rule-based.");
+                    baoCaoAI = _aiService.TaoBaoCaoAI(
+                        bmi,
+                        chiSo.HuyetAp ?? "120/80",
+                        chiSo.DuongHuyet,
+                        chiSo.NhipTim,
+                        thongTin.Tuoi ?? 30,
+                        thoiQuen?.HutThuoc ?? false,
+                        thoiQuen?.UongRuouBia ?? false
+                    );
+                    aiNguon = "RuleBased (Gemini lỗi)";
+                }
+                else
+                {
+                    // Gemini thành công - response là text bình thường
+                    baoCaoAI = geminiResult;
+                    aiNguon = "Gemini";
+                    _logger.LogInformation($"Gemini analysis successful");
+                }
+            }
+            else
             {
-                _context.NguyCoBenhLy.Add(new NguyCoBenhLy
-                {
-                    MaNguoiDung = maNguoiDung,
-                    TenBenh = "Cao huyết áp",
-                    XacSuat = nguyCoCaoHuyetAp,
-                    NgayDanhGia = DateTime.Now
-                });
+                // Không dùng Gemini (useGemini=false hoặc chưa config)
+                baoCaoAI = _aiService.TaoBaoCaoAI(
+                    bmi,
+                    chiSo.HuyetAp ?? "120/80",
+                    chiSo.DuongHuyet,
+                    chiSo.NhipTim,
+                    thongTin.Tuoi ?? 30,
+                    thoiQuen?.HutThuoc ?? false,
+                    thoiQuen?.UongRuouBia ?? false
+                );
+                aiNguon = "RuleBased";
             }
+
+            var goiYAI = new GoiYSucKhoeAI
+            {
+                MaNguoiDung = maNguoiDung,
+                NoiDungGoiY = baoCaoAI,
+                NgayTao = DateTime.Now
+            };
+            _context.GoiYSucKhoeAI.Add(goiYAI);
+            await _context.SaveChangesAsync();
+
+            return Ok(new
+            {
+                bmi = Math.Round(bmi, 2),
+                trangThaiBMI = _aiService.PhanTichBMI(bmi),
+                baoCaoAI = baoCaoAI,
+                aiNguon = aiNguon
+            });
         }
-
-        // Tạo gợi ý AI
-        string goiY = TaoGoiYAI(bmi, nguyCoTieuDuong, nguyCoCaoHuyetAp);
-        
-        _context.GoiYSucKhoeAI.Add(new GoiYSucKhoeAI
+        catch (Exception ex)
         {
-            MaNguoiDung = maNguoiDung,
-            NoiDungGoiY = goiY,
-            NgayTao = DateTime.Now
-        });
+            _logger.LogError($"Lỗi phân tích AI: {ex.Message}");
+            return StatusCode(500, new { message = "Lỗi: " + ex.Message });
+        }
+    }
 
-        await _context.SaveChangesAsync();
-
-        return Ok(new
+    [HttpPost("goiy-thucdon/{maNguoiDung}")]
+    public async Task<IActionResult> GoiYThucDonAI(int maNguoiDung)
+    {
+        try
         {
-            bmi = Math.Round(bmi, 2),
-            trangThaiBMI = _aiService.PhanTichBMI(bmi),
-            nguyCoTieuDuong = Math.Round(nguyCoTieuDuong * 100, 2),
-            nguyCoCaoHuyetAp = Math.Round(nguyCoCaoHuyetAp * 100, 2),
-            goiY
-        });
+            var thongTin = await _context.ThongTinCaNhan
+                .FirstOrDefaultAsync(t => t.MaNguoiDung == maNguoiDung);
+
+            var chiSo = await _context.ChiSoSucKhoe
+                .Where(c => c.MaNguoiDung == maNguoiDung)
+                .OrderByDescending(c => c.NgayDo)
+                .FirstOrDefaultAsync();
+
+            if (thongTin == null || chiSo == null)
+                return BadRequest(new { message = "Chưa đủ dữ liệu" });
+
+            double bmi = chiSo.CanNang.Value / Math.Pow(thongTin.ChieuCao.Value / 100, 2);
+
+            string thongTinInput = $@"
+Thông tin:
+- Tuổi: {thongTin.Tuoi}
+- Giới tính: {thongTin.GioiTinh}
+- BMI: {bmi:F1}
+- Tình trạng: {_aiService.PhanTichBMI(bmi)}
+- Đường huyết: {chiSo.DuongHuyet} mg/dL
+";
+
+            string goiY = await _googleAIService.GoiYThucDonAsync(thongTinInput);
+
+            return Ok(new { goiY });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError($"Lỗi gợi ý thực đơn: {ex.Message}");
+            return StatusCode(500, new { message = "Lỗi: " + ex.Message });
+        }
     }
 
     [HttpGet("goiy/{maNguoiDung}")]
@@ -103,48 +177,19 @@ public class AIController : ControllerBase
         return Ok(goiY);
     }
 
-    private string TaoGoiYAI(double bmi, double nguyCoTieuDuong, double nguyCoCaoHuyetAp)
+    [HttpGet("status")]
+    public IActionResult GetAIStatus()
     {
-        var goiY = new System.Text.StringBuilder();
-        
-        goiY.AppendLine("📊 PHÂN TÍCH SỨC KHỎE TỪ AI:");
-        goiY.AppendLine();
-
-        // Đánh giá BMI
-        string trangThaiBMI = _aiService.PhanTichBMI(bmi);
-        goiY.AppendLine($"✓ BMI: {Math.Round(bmi, 2)} - {trangThaiBMI}");
-        
-        if (trangThaiBMI == "Béo phì")
-            goiY.AppendLine("  → Khuyến nghị: Giảm cân bằng chế độ ăn uống và tập luyện");
-        else if (trangThaiBMI == "Gầy")
-            goiY.AppendLine("  → Khuyến nghị: Tăng cường dinh dưỡng");
-        
-        goiY.AppendLine();
-
-        // Đánh giá nguy cơ
-        if (nguyCoTieuDuong > 0.5)
+        return Ok(new
         {
-            goiY.AppendLine($"⚠️ Nguy cơ tiểu đường: {Math.Round(nguyCoTieuDuong * 100)}%");
-            goiY.AppendLine("  → Hạn chế đường, tinh bột");
-            goiY.AppendLine("  → Tăng cường vận động");
-            goiY.AppendLine();
-        }
+            geminiConfigured = _googleAIService.IsConfigured(),
+            model = _googleAIService.GetModel()
+        });
+    }
 
-        if (nguyCoCaoHuyetAp > 0.5)
-        {
-            goiY.AppendLine($"⚠️ Nguy cơ cao huyết áp: {Math.Round(nguyCoCaoHuyetAp * 100)}%");
-            goiY.AppendLine("  → Giảm muối trong ăn uống");
-            goiY.AppendLine("  → Tránh stress");
-            goiY.AppendLine();
-        }
-
-        // Lời khuyên chung
-        goiY.AppendLine("💡 LỜI KHUYÊN:");
-        goiY.AppendLine("  • Ngủ đủ 7-8 tiếng/ngày");
-        goiY.AppendLine("  • Uống đủ 2 lít nước/ngày");
-        goiY.AppendLine("  • Tập thể dục 30 phút/ngày");
-        goiY.AppendLine("  • Ăn nhiều rau xanh");
-
-        return goiY.ToString();
+    [HttpGet("chat-history/{maNguoiDung}")]
+    public async Task<IActionResult> GetChatHistory(int maNguoiDung)
+    {
+        return Ok(new List<object>());
     }
 }

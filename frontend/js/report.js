@@ -101,3 +101,7 @@ async function loadAIRecommendations() {
         console.error('Error:', error);
     }
 }
+
+<div class="mt-4 text-center no-print">
+    <p class="text-muted">Hệ thống Quản lý Sức khỏe Thông minh - MSSV: 221275 - &copy; 2026</p>
+</div>

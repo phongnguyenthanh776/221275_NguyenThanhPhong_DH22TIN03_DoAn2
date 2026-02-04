@@ -22,32 +22,40 @@
         <div class="row">
             <div class="col-md-2">
                 <div class="list-group sticky-top" style="top: 20px;">
-                    <a href="#" class="list-group-item list-group-item-action active" onclick="showSection('profile')">
+                    <a href="javascript:void(0)" class="list-group-item list-group-item-action active" onclick="showSection('overview')">
+                        📊 Tổng quan
+                    </a>
+                    <a href="javascript:void(0)" class="list-group-item list-group-item-action" onclick="showSection('profile')">
                         👤 Thông tin cá nhân
                     </a>
-                    <a href="#" class="list-group-item list-group-item-action" onclick="showSection('health')">
+                    <a href="javascript:void(0)" class="list-group-item list-group-item-action" onclick="showSection('health')">
                         📊 Chỉ số sức khỏe
                     </a>
-                    <a href="#" class="list-group-item list-group-item-action" onclick="showSection('bmi')">
+                    <a href="javascript:void(0)" class="list-group-item list-group-item-action" onclick="showSection('bmi')">
                         📈 Lịch sử BMI
                     </a>
-                    <a href="#" class="list-group-item list-group-item-action" onclick="showSection('habits')">
+                    <a href="javascript:void(0)" class="list-group-item list-group-item-action" onclick="showSection('habits')">
                         🏃 Thói quen sinh hoạt
                     </a>
-                    <a href="#" class="list-group-item list-group-item-action" onclick="showSection('menu')">
+                    <a href="javascript:void(0)" class="list-group-item list-group-item-action" onclick="showSection('menu')">
                         🍎 Thực đơn
                     </a>
-                    <a href="#" class="list-group-item list-group-item-action" onclick="showSection('warnings')">
+                    <a href="javascript:void(0)" class="list-group-item list-group-item-action" onclick="showSection('warnings')">
                         ⚠️ Cảnh báo
                     </a>
-                    <a href="#" class="list-group-item list-group-item-action" onclick="showSection('ai')">
+                    <a href="javascript:void(0)" class="list-group-item list-group-item-action" onclick="showSection('ai')">
                         🤖 Tư vấn AI
                     </a>
                 </div>
             </div>
             <div class="col-md-10">
                 <div id="content">
-                    <!-- Dynamic content -->
+                    <div class="text-center mt-5">
+                        <div class="spinner-border text-primary" role="status">
+                            <span class="visually-hidden">Loading...</span>
+                        </div>
+                        <p class="mt-3">Đang tải dữ liệu...</p>
+                    </div>
                 </div>
             </div>
         </div>

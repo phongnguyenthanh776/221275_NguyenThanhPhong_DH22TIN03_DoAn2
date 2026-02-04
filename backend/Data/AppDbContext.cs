@@ -14,6 +14,7 @@ public class AppDbContext : DbContext
     public DbSet<NguyCoBenhLy> NguyCoBenhLy { get; set; }
     public DbSet<CanhBaoSucKhoe> CanhBaoSucKhoe { get; set; }
     public DbSet<GoiYSucKhoeAI> GoiYSucKhoeAI { get; set; }
+    public DbSet<LichSuChat> LichSuChat { get; set; }
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -40,5 +41,14 @@ public class AppDbContext : DbContext
         modelBuilder.Entity<NguyCoBenhLy>().ToTable("NguyCoBenhLy", "dbo");
         modelBuilder.Entity<CanhBaoSucKhoe>().ToTable("CanhBaoSucKhoe", "dbo");
         modelBuilder.Entity<GoiYSucKhoeAI>().ToTable("GoiYSucKhoeAI", "dbo");
+        modelBuilder.Entity<LichSuChat>().ToTable("LichSuChat", "dbo");
+
+        // Configure LichSuChat
+        modelBuilder.Entity<LichSuChat>()
+            .HasKey(c => c.MaChat);
+
+        modelBuilder.Entity<LichSuChat>()
+            .Property(c => c.MaChat)
+            .ValueGeneratedOnAdd();
     }
 }

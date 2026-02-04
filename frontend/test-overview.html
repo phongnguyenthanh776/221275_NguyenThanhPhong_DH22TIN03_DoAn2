@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Test Overview API</title>
+</head>
+<body>
+    <h1>Test Overview API</h1>
+    <button onclick="testAPI()">Test API</button>
+    <pre id="result"></pre>
+
+    <script>
+        function testAPI() {
+            const userId = 1; // Thay bằng ID user thật
+            const url = 'http://localhost:5000/api/SucKhoe/tong-quan/' + userId;
+            
+            document.getElementById('result').textContent = 'Loading...';
+            
+            fetch(url)
+                .then(r => {
+                    document.getElementById('result').textContent = 'Status: ' + r.status;
+                    return r.json();
+                })
+                .then(data => {
+                    document.getElementById('result').textContent = JSON.stringify(data, null, 2);
+                })
+                .catch(e => {
+                    document.getElementById('result').textContent = 'Error: ' + e.message;
+                });
+        }
+    </script>
+</body>
+</html>
