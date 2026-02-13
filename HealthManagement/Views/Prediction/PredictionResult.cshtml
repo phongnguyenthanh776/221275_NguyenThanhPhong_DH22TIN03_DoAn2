@@ -1,0 +1,92 @@
+@model PredictionResponse
+
+@{
+    ViewData["Title"] = "Kết quả dự đoán";
+    var riskColor = Model.Result.Contains("cao") ? "danger" : Model.Result.Contains("trung bình") ? "warning" : "success";
+}
+
+<div class="row justify-content-center">
+    <div class="col-md-10">
+        <div class="card border-0 shadow-lg">
+            <div class="card-header text-white text-center py-4" 
+                 style="background: linear-gradient(135deg, @(riskColor == "danger" ? "#ef4444, #dc2626" : riskColor == "warning" ? "#f59e0b, #d97706" : "#10b981, #059669"));">
+                <h2><i class="bi bi-clipboard-data"></i> Kết quả Dự đoán AI</h2>
+            </div>
+            <div class="card-body p-5">
+                <div class="text-center mb-5">
+                    <div class="display-1 mb-3">
+                        @if (riskColor == "danger")
+                        {
+                            <i class="bi bi-exclamation-triangle-fill text-danger"></i>
+                        }
+                        else if (riskColor == "warning")
+                        {
+                            <i class="bi bi-exclamation-circle-fill text-warning"></i>
+                        }
+                        else
+                        {
+                            <i class="bi bi-check-circle-fill text-success"></i>
+                        }
+                    </div>
+                    <h1 class="display-4 fw-bold">@Model.Result</h1>
+                    <h3 class="text-muted">Mức độ nguy cơ: @Model.RiskLevel.ToString("0.0")%</h3>
+                </div>
+
+                <div class="progress mb-4" style="height: 30px;">
+                    <div class="progress-bar bg-@riskColor" role="progressbar" 
+                         style="width: @Model.RiskLevel%" 
+                         aria-valuenow="@Model.RiskLevel" aria-valuemin="0" aria-valuemax="100">
+                        @Model.RiskLevel.ToString("0.0")%
+                    </div>
+                </div>
+
+                <div class="alert alert-@riskColor">
+                    <h5><i class="bi bi-info-circle"></i> Chi tiết:</h5>
+                    <p class="mb-0">@Model.Details</p>
+                </div>
+
+                <div class="card bg-light mb-4">
+                    <div class="card-body">
+                        <h5><i class="bi bi-lightbulb"></i> Lời khuyên:</h5>
+                        <p class="mb-0">@Model.Recommendation</p>
+                    </div>
+                </div>
+
+                <div class="alert alert-warning">
+                    <strong><i class="bi bi-exclamation-triangle"></i> Lưu ý quan trọng:</strong>
+                    <ul class="mb-0 mt-2">
+                        <li>Kết quả này chỉ mang tính chất tham khảo.</li>
+                        <li>Không tự ý điều trị dựa trên kết quả này.</li>
+                        <li><strong>Khuyến nghị:</strong> Gặp bác sĩ chuyên khoa để được tư vấn và kiểm tra chính xác.</li>
+                    </ul>
+                </div>
+
+                <div class="alert alert-info">
+                    <small>
+                        <i class="bi bi-robot"></i> <strong>Về mô hình AI:</strong><br />
+                        Hiện tại hệ thống sử dụng thuật toán giả lập dựa trên các ngưỡng y khoa cơ bản. 
+                        Sau khi hoàn thiện việc train Machine Learning model từ Kaggle dataset (Heart Disease / Diabetes), 
+                        độ chính xác sẽ được cải thiện đáng kể.
+                    </small>
+                </div>
+
+                <div class="d-grid gap-2 d-md-flex justify-content-md-center mt-4">
+                    <a asp-action="Predict" class="btn btn-primary">
+                        <i class="bi bi-arrow-repeat"></i> Dự đoán lại
+                    </a>
+                    <a asp-action="History" class="btn btn-outline-secondary">
+                        <i class="bi bi-clock-history"></i> Xem lịch sử
+                    </a>
+                    <a asp-controller="Home" asp-action="Dashboard" class="btn btn-outline-primary">
+                        <i class="bi bi-speedometer2"></i> Dashboard
+                    </a>
+                </div>
+            </div>
+            <div class="card-footer text-muted text-center">
+                <small>
+                    <i class="bi bi-calendar"></i> Thời gian dự đoán: @DateTime.Now.ToString("dd/MM/yyyy HH:mm:ss")
+                </small>
+            </div>
+        </div>
+    </div>
+</div>

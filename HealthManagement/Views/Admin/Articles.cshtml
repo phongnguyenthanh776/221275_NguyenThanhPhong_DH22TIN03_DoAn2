@@ -1,0 +1,73 @@
+@model List<BaiVietSucKhoe>
+
+@{
+    ViewData["Title"] = "Quản lý bài viết";
+}
+
+<div class="row mb-4">
+    <div class="col-md-8">
+        <h2><i class="bi bi-newspaper"></i> Quản lý bài viết</h2>
+    </div>
+    <div class="col-md-4 text-end">
+        <a asp-action="CreateArticle" class="btn btn-primary">
+            <i class="bi bi-plus-circle"></i> Tạo bài viết mới
+        </a>
+    </div>
+</div>
+
+<div class="card">
+    <div class="card-body">
+        <div class="table-responsive">
+            <table class="table table-hover">
+                <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>Tiêu đề</th>
+                        <th>Danh mục</th>
+                        <th>Tác giả</th>
+                        <th>Lượt xem</th>
+                        <th>Ngày đăng</th>
+                        <th>Trạng thái</th>
+                        <th>Thao tác</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var article in Model)
+                    {
+                        <tr>
+                            <td>@article.MaBaiViet</td>
+                            <td>@article.TieuDe</td>
+                            <td><span class="badge bg-info">@article.DanhMuc</span></td>
+                            <td>@article.TacGia</td>
+                            <td><i class="bi bi-eye"></i> @article.LuotXem</td>
+                            <td>@article.NgayDang.ToString("dd/MM/yyyy")</td>
+                            <td>
+                                @if (article.TrangThai)
+                                {
+                                    <span class="badge bg-success">Published</span>
+                                }
+                                else
+                                {
+                                    <span class="badge bg-secondary">Draft</span>
+                                }
+                            </td>
+                            <td>
+                                <div class="btn-group" role="group">
+                                    <a asp-action="EditArticle" asp-route-id="@article.MaBaiViet" class="btn btn-sm btn-primary">
+                                        <i class="bi bi-pencil"></i>
+                                    </a>
+                                    <form method="post" asp-action="DeleteArticle" asp-route-id="@article.MaBaiViet" style="display: inline;">
+                                        <button type="submit" class="btn btn-sm btn-danger" 
+                                                onclick="return confirm('Bạn có chắc muốn xóa bài viết này?')">
+                                            <i class="bi bi-trash"></i>
+                                        </button>
+                                    </form>
+                                </div>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>

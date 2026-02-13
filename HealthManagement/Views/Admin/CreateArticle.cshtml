@@ -1,0 +1,95 @@
+@model BaiVietSucKhoe
+
+@{
+    ViewData["Title"] = Model.MaBaiViet > 0 ? "Chỉnh sửa bài viết" : "Tạo bài viết mới";
+    var isEdit = Model.MaBaiViet > 0;
+}
+
+<div class="row justify-content-center">
+    <div class="col-md-10">
+        <div class="card">
+            <div class="card-header">
+                <h4><i class="bi bi-newspaper"></i> @ViewData["Title"]</h4>
+            </div>
+            <div class="card-body">
+                <form asp-action="@(isEdit ? "EditArticle" : "CreateArticle")" method="post">
+                    <input type="hidden" asp-for="MaBaiViet" />
+                    <input type="hidden" asp-for="LuotXem" />
+                    <input type="hidden" asp-for="NgayDang" />
+
+                    <div asp-validation-summary="All" class="text-danger mb-3"></div>
+
+                    <div class="mb-3">
+                        <label asp-for="TieuDe" class="form-label"></label>
+                        <input asp-for="TieuDe" class="form-control" placeholder="Nhập tiêu đề bài viết" />
+                        <span asp-validation-for="TieuDe" class="text-danger"></span>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label asp-for="DanhMuc" class="form-label"></label>
+                            <select asp-for="DanhMuc" class="form-select">
+                                <option value="">-- Chọn danh mục --</option>
+                                <option value="Dinh dưỡng">Dinh dưỡng</option>
+                                <option value="Tập luyện">Tập luyện</option>
+                                <option value="Sức khỏe tim mạch">Sức khỏe tim mạch</option>
+                                <option value="Sức khỏe tinh thần">Sức khỏe tinh thần</option>
+                                <option value="Phòng bệnh">Phòng bệnh</option>
+                            </select>
+                        </div>
+
+                        <div class="col-md-6 mb-3">
+                            <label asp-for="TacGia" class="form-label"></label>
+                            <input asp-for="TacGia" class="form-control" placeholder="Tên tác giả" />
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label asp-for="MoTaNgan" class="form-label"></label>
+                        <textarea asp-for="MoTaNgan" class="form-control" rows="2" 
+                                  placeholder="Mô tả ngắn về bài viết"></textarea>
+                    </div>
+
+                    <div class="mb-3">
+                        <label asp-for="NoiDung" class="form-label"></label>
+                        <textarea asp-for="NoiDung" class="form-control" rows="10" 
+                                  placeholder="Nội dung bài viết (hỗ trợ HTML)"></textarea>
+                        <span asp-validation-for="NoiDung" class="text-danger"></span>
+                    </div>
+
+                    <div class="mb-3">
+                        <label asp-for="Tags" class="form-label"></label>
+                        <input asp-for="Tags" class="form-control" 
+                               placeholder="Ví dụ: sức khỏe, dinh dưỡng, tập luyện" />
+                        <small class="text-muted">Phân cách bằng dấu phẩy</small>
+                    </div>
+
+                    <div class="mb-3">
+                        <label asp-for="HinhAnh" class="form-label"></label>
+                        <input asp-for="HinhAnh" class="form-control" placeholder="URL hình ảnh" />
+                    </div>
+
+                    <div class="form-check mb-3">
+                        <input asp-for="TrangThai" class="form-check-input" />
+                        <label asp-for="TrangThai" class="form-check-label">
+                            Xuất bản ngay (Published)
+                        </label>
+                    </div>
+
+                    <div class="d-grid gap-2">
+                        <button type="submit" class="btn btn-primary btn-lg">
+                            <i class="bi bi-check-circle"></i> @(isEdit ? "Cập nhật" : "Tạo bài viết")
+                        </button>
+                        <a asp-action="Articles" class="btn btn-outline-secondary">
+                            <i class="bi bi-arrow-left"></i> Quay lại
+                        </a>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+}

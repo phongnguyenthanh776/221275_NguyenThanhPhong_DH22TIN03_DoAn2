@@ -1,0 +1,106 @@
+@model PredictionRequest
+
+@{
+    ViewData["Title"] = "Dự đoán nguy cơ sức khỏe";
+}
+
+<div class="row justify-content-center">
+    <div class="col-md-10">
+        <div class="card">
+            <div class="card-header">
+                <h4><i class="bi bi-robot"></i> Dự đoán nguy cơ sức khỏe bằng AI</h4>
+            </div>
+            <div class="card-body">
+                <div class="alert alert-warning">
+                    <i class="bi bi-exclamation-triangle"></i> <strong>Lưu ý quan trọng:</strong>
+                    <ul class="mb-0 mt-2">
+                        <li>Đây là công cụ hỗ trợ dự đoán, KHÔNG THAY THẾ chẩn đoán y khoa.</li>
+                        <li>Hiện tại sử dụng thuật toán giả lập. Sau khi train model từ Kaggle dataset, kết quả sẽ chính xác hơn.</li>
+                        <li>Vui lòng tham khảo ý kiến bác sĩ nếu có dấu hiệu bất thường.</li>
+                    </ul>
+                </div>
+
+                <form asp-action="Predict" method="post">
+                    <div asp-validation-summary="All" class="text-danger mb-3"></div>
+
+                    <h5 class="mb-3"><i class="bi bi-person"></i> Thông tin cơ bản</h5>
+                    <div class="row">
+                        <div class="col-md-4 mb-3">
+                            <label asp-for="Age" class="form-label">Tuổi</label>
+                            <input asp-for="Age" class="form-control" placeholder="Ví dụ: 45" />
+                            <span asp-validation-for="Age" class="text-danger"></span>
+                        </div>
+                        <div class="col-md-4 mb-3">
+                            <label asp-for="Sex" class="form-label">Giới tính</label>
+                            <select asp-for="Sex" class="form-select">
+                                <option value="Nam">Nam</option>
+                                <option value="Nữ">Nữ</option>
+                            </select>
+                        </div>
+                        <div class="col-md-4 mb-3">
+                            <label asp-for="ChestPainType" class="form-label">Loại đau ngực (0-3)</label>
+                            <input asp-for="ChestPainType" class="form-control" placeholder="0: Không, 3: Nghiêm trọng" />
+                            <small class="text-muted">0: Không đau, 1: Nhẹ, 2: Trung bình, 3: Nặng</small>
+                        </div>
+                    </div>
+
+                    <hr />
+                    <h5 class="mb-3"><i class="bi bi-heart-pulse"></i> Chỉ số sức khỏe</h5>
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label asp-for="RestingBP" class="form-label">Huyết áp nghỉ (mmHg)</label>
+                            <input asp-for="RestingBP" class="form-control" placeholder="Ví dụ: 120" />
+                            <span asp-validation-for="RestingBP" class="text-danger"></span>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label asp-for="Cholesterol" class="form-label">Cholesterol (mg/dL)</label>
+                            <input asp-for="Cholesterol" class="form-control" placeholder="Ví dụ: 200" />
+                            <span asp-validation-for="Cholesterol" class="text-danger"></span>
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label asp-for="FastingBS" class="form-label">Đường huyết lúc đói (mg/dL)</label>
+                            <input asp-for="FastingBS" class="form-control" placeholder="Ví dụ: 100" />
+                            <span asp-validation-for="FastingBS" class="text-danger"></span>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label asp-for="MaxHR" class="form-label">Nhịp tim tối đa (bpm)</label>
+                            <input asp-for="MaxHR" class="form-control" placeholder="Ví dụ: 150" />
+                            <span asp-validation-for="MaxHR" class="text-danger"></span>
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label asp-for="ExerciseAngina" class="form-label">Đau thắt ngực khi vận động</label>
+                            <select asp-for="ExerciseAngina" class="form-select">
+                                <option value="0">Không</option>
+                                <option value="1">Có</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="alert alert-info">
+                        <i class="bi bi-info-circle"></i> <strong>Mô hình AI:</strong> Sử dụng thuật toán Machine Learning (Logistic Regression / Random Forest) 
+                        được train từ Kaggle Heart Disease Dataset để dự đoán nguy cơ.
+                    </div>
+
+                    <div class="d-grid gap-2">
+                        <button type="submit" class="btn btn-primary btn-lg">
+                            <i class="bi bi-magic"></i> Dự đoán ngay
+                        </button>
+                        <a asp-action="History" class="btn btn-outline-secondary">
+                            <i class="bi bi-clock-history"></i> Xem lịch sử dự đoán
+                        </a>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+}

@@ -1,0 +1,80 @@
+@model List<BaiVietSucKhoe>
+
+@{
+    ViewData["Title"] = "Bài viết sức khỏe";
+    var keyword = ViewBag.Keyword as string;
+}
+
+<div class="row mb-4">
+    <div class="col-md-8">
+        <h2><i class="bi bi-newspaper"></i> Bài viết sức khỏe</h2>
+        <p class="text-muted">Kiến thức hữu ích về sức khỏe và dinh dưỡng</p>
+    </div>
+    <div class="col-md-4">
+        <form method="get" asp-action="Index">
+            <div class="input-group">
+                <input type="text" name="keyword" class="form-control" placeholder="Tìm kiếm bài viết..." value="@keyword" />
+                <button class="btn btn-primary" type="submit">
+                    <i class="bi bi-search"></i>
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<div class="row">
+    @if (Model != null && Model.Any())
+    {
+        @foreach (var article in Model)
+        {
+            <div class="col-md-6 mb-4">
+                <div class="card h-100">
+                    @if (!string.IsNullOrEmpty(article.HinhAnh))
+                    {
+                        <img src="@article.HinhAnh" class="card-img-top" alt="@article.TieuDe" style="height: 250px; object-fit: cover;">
+                    }
+                    else
+                    {
+                        <div class="card-img-top bg-light d-flex align-items-center justify-content-center" style="height: 250px;">
+                            <i class="bi bi-image display-1 text-secondary"></i>
+                        </div>
+                    }
+                    <div class="card-body">
+                        <div class="mb-2">
+                            <span class="badge bg-primary">@article.DanhMuc</span>
+                            @if (!string.IsNullOrEmpty(article.Tags))
+                            {
+                                @foreach (var tag in article.Tags.Split(',').Take(3))
+                                {
+                                    <span class="badge bg-secondary">@tag.Trim()</span>
+                                }
+                            }
+                        </div>
+                        <h5 class="card-title">@article.TieuDe</h5>
+                        <p class="card-text text-muted">@article.MoTaNgan</p>
+                    </div>
+                    <div class="card-footer">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <small class="text-muted">
+                                <i class="bi bi-person"></i> @article.TacGia<br />
+                                <i class="bi bi-calendar"></i> @article.NgayDang.ToString("dd/MM/yyyy")<br />
+                                <i class="bi bi-eye"></i> @article.LuotXem lượt xem
+                            </small>
+                            <a asp-action="Details" asp-route-id="@article.MaBaiViet" class="btn btn-primary">
+                                Đọc thêm <i class="bi bi-arrow-right"></i>
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        }
+    }
+    else
+    {
+        <div class="col-12">
+            <div class="alert alert-info">
+                <i class="bi bi-info-circle"></i> Không tìm thấy bài viết nào.
+            </div>
+        </div>
+    }
+</div>
