@@ -46,7 +46,7 @@ namespace HealthManagement.Controllers
             var vm = new ManageAccountViewModel
             {
                 Email = identityUser.Email ?? string.Empty,
-                PhoneNumber = identityUser.PhoneNumber ?? string.Empty,
+                PhoneNumber = nguoiDung?.SoDienThoai ?? string.Empty,
                 CurrentEmail = identityUser.Email ?? string.Empty,
                 HoTen = nguoiDung?.HoTen ?? string.Empty
             };
