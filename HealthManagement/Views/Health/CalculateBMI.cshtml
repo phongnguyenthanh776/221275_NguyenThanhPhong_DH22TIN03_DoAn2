@@ -1,0 +1,61 @@
+@model BMIViewModel
+
+@{
+    ViewData["Title"] = "Tính BMI";
+}
+
+<div class="row justify-content-center">
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header">
+                <h4><i class="bi bi-calculator"></i> Tính chỉ số BMI</h4>
+            </div>
+            <div class="card-body">
+                <div class="alert alert-info">
+                    <strong>BMI (Body Mass Index)</strong> là chỉ số đánh giá cân nặng dựa trên chiều cao và cân nặng.
+                </div>
+
+                <form asp-action="CalculateBMI" method="post">
+                    <div asp-validation-summary="All" class="text-danger mb-3"></div>
+
+                    <div class="mb-4">
+                        <label asp-for="ChieuCao" class="form-label"></label>
+                        <div class="input-group">
+                            <input asp-for="ChieuCao" class="form-control form-control-lg" placeholder="Ví dụ: 170" />
+                            <span class="input-group-text">cm</span>
+                        </div>
+                        <span asp-validation-for="ChieuCao" class="text-danger"></span>
+                    </div>
+
+                    <div class="mb-4">
+                        <label asp-for="CanNang" class="form-label"></label>
+                        <div class="input-group">
+                            <input asp-for="CanNang" class="form-control form-control-lg" placeholder="Ví dụ: 65" />
+                            <span class="input-group-text">kg</span>
+                        </div>
+                        <span asp-validation-for="CanNang" class="text-danger"></span>
+                    </div>
+
+                    <div class="d-grid gap-2">
+                        <button type="submit" class="btn btn-primary btn-lg">
+                            <i class="bi bi-calculator"></i> Tính BMI
+                        </button>
+                        <a asp-action="BMIHistory" class="btn btn-outline-secondary">
+                            <i class="bi bi-clock-history"></i> Xem lịch sử
+                        </a>
+                    </div>
+                </form>
+
+                <hr class="my-4" />
+
+                <div class="alert alert-secondary">
+                    <i class="bi bi-info-circle"></i> Phân loại và khuyến nghị sẽ được cung cấp từ AI sau khi tính toán và phân tích.
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+}

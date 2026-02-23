@@ -1,0 +1,180 @@
+@model dynamic
+
+@{
+    ViewData["Title"] = "Trang Chính Sức Khỏe";
+}
+
+<div class="container my-4">
+    <!-- Breadcrumb Navigation -->
+    <nav aria-label="breadcrumb">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a href="/">Trang Chủ</a></li>
+            <li class="breadcrumb-item active">Sức Khỏe</li>
+        </ol>
+    </nav>
+
+    <!-- Header -->
+    <h1 class="mb-4"><i class="fas fa-heartbeat text-danger"></i> Bảng Điều Khiển Sức Khỏe</h1>
+
+    <!-- Alert for workflow -->
+    <div class="alert alert-info" role="alert">
+        <i class="fas fa-lightbulb"></i>
+        <strong>Quy Trình Sử Dụng:</strong> Quản Lý Thông Tin → Nhập Chỉ Số Y Tế → Dự Đoán AI → Nhận Khuyến Cáo Ăn Uống
+    </div>
+
+    <!-- Quick Stats Section -->
+    @if (ViewBag.LatestMetric != null)
+    {
+        <div class="row mb-4">
+            <h4 class="col-12 mb-3">Chỉ Số Y Tế Mới Nhất</h4>
+            <div class="col-md-3 mb-3">
+                <div class="card border-info">
+                    <div class="card-body">
+                        <h6 class="card-title">Huyết Áp (mmHg)</h6>
+                        <p class="card-text text-info fs-5">@((ViewBag.LatestMetric.HuyetApTam != null && ViewBag.LatestMetric.HuyetApThan != null) ? $"{ViewBag.LatestMetric.HuyetApTam}/{ViewBag.LatestMetric.HuyetApThan}" : "--")</p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3 mb-3">
+                <div class="card border-warning">
+                    <div class="card-body">
+                        <h6 class="card-title">Nhịp Tim (bpm)</h6>
+                        <p class="card-text text-warning fs-5">@ViewBag.LatestMetric.NhipTim</p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3 mb-3">
+                <div class="card border-success">
+                    <div class="card-body">
+                        <h6 class="card-title">Glucose (mg/dL)</h6>
+                        <p class="card-text text-success fs-5">@(ViewBag.LatestMetric.DuongHuyet ?? "--")</p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3 mb-3">
+                <div class="card border-danger">
+                    <div class="card-body">
+                        <h6 class="card-title">Cholesterol (mg/dL)</h6>
+                        <p class="card-text text-danger fs-5">@ViewBag.LatestMetric.Cholesterol</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    }
+
+    <!-- Features Section -->
+    <div class="row mb-4">
+        <h4 class="col-12 mb-3">Các Chức Năng Quản Lý</h4>
+
+        <div class="col-md-4 mb-3">
+            <div class="card h-100">
+                <div class="card-body">
+                    <h5 class="card-title"><i class="fas fa-user text-primary"></i> Hồ Sơ &amp; BMI</h5>
+                    <p class="card-text">Xem và cập nhật thông tin cơ bản, tính toán BMI và theo dõi lịch sử cân nặng.</p>
+                    <a href="@Url.Action("Profile", "Health")" class="btn btn-sm btn-primary">Xem Chi Tiết</a>
+                </div>
+            </div>
+        </div>
+
+        <!-- AI Prediction Card -->
+        <div class="col-md-4 mb-3">
+            <div class="card h-100 border-danger">
+                <div class="card-body">
+                    <h5 class="card-title text-danger"><i class="fas fa-brain"></i> Dự Đoán AI</h5>
+                    <p class="card-text">Sử dụng trí tuệ nhân tạo để dự đoán nguy cơ mắc các bệnh lý.</p>
+                    <a href="@Url.Action("GoToPrediction", "Health")" class="btn btn-sm btn-danger">Dự Đoán Ngay</a>
+                </div>
+            </div>
+        </div>
+
+        <!-- Metric History Card -->
+        <div class="col-md-4 mb-3">
+            <div class="card h-100">
+                <div class="card-body">
+                    <h5 class="card-title"><i class="fas fa-chart-line text-secondary"></i> Lịch Sử Chỉ Số</h5>
+                    <p class="card-text">Theo dõi lịch sử tất cả các chỉ số y tế đã nhập.</p>
+                    <a href="@Url.Action("MetricHistory", "Health")" class="btn btn-sm btn-secondary">Xem Chi Tiết</a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Recent Predictions Section -->
+    @if (ViewBag.PredictionHistory != null && ViewBag.PredictionHistory.Count > 0)
+    {
+        <div class="row mb-4">
+            <div class="col-12">
+                <h4><i class="fas fa-history"></i> Lịch Sử Dự Đoán Gần Đây</h4>
+                <div class="table-responsive">
+                    <table class="table table-hover">
+                        <thead class="table-light">
+                            <tr>
+                                <th>Ngày Dự Đoán</th>
+                                <th>Loại Bệnh</th>
+                                <th>Mức Độ Nguy Hiểm</th>
+                                <th>Hành Động</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var prediction in ViewBag.PredictionHistory)
+                            {
+                                <tr>
+                                    <td>@prediction.NgayDuDoan.ToString("dd/MM/yyyy HH:mm")</td>
+                                    <td>@prediction.LoaiBenhDuDoan</td>
+                                    <td>
+                                        @if (prediction.MucDoNguyCo > 0.7m)
+                                        {
+                                            <span class="badge bg-danger">Cao (@prediction.MucDoNguyCo.ToString("P"))</span>
+                                        }
+                                        else if (prediction.MucDoNguyCo > 0.4m)
+                                        {
+                                            <span class="badge bg-warning">Trung Bình (@prediction.MucDoNguyCo.ToString("P"))</span>
+                                        }
+                                        else
+                                        {
+                                            <span class="badge bg-success">Thấp (@prediction.MucDoNguyCo.ToString("P"))</span>
+                                        }
+                                    </td>
+                                    <td>
+                                        <a href="@Url.Action("Details", "Prediction", new { id = prediction.MaDuDoan })" class="btn btn-sm btn-primary">Chi Tiết</a>
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    }
+
+    <!-- Tips Section -->
+    <div class="row">
+        <div class="col-12">
+            <h4>Những Lời Khuyên Hữu Ích</h4>
+            <ul class="list-group">
+                <li class="list-group-item">
+                    <strong>Nhập Dữ Liệu Thường Xuyên:</strong> Cập nhật các chỉ số sức khỏe của bạn hàng tuần để có dự đoán chính xác.
+                </li>
+                <li class="list-group-item">
+                    <strong>Tham Khảo Bác Sĩ:</strong> Các dự đoán AI chỉ mang tính tham khảo. Luôn tham khảo ý kiến bác sĩ chuyên khoa.
+                </li>
+                <li class="list-group-item">
+                    <strong>Thay Đổi Lối Sống:</strong> Kết hợp các khuyến cáo ăn uống với hoạt động thể chất thường xuyên.
+                </li>
+                <li class="list-group-item">
+                    <strong>Theo Dõi Tiến Độ:</strong> Xem lịch sử chỉ số để theo dõi sự cải thiện sức khỏe của bạn.
+                </li>
+            </ul>
+        </div>
+    </div>
+</div>
+
+<style>
+    .card {
+        transition: transform 0.2s, box-shadow 0.2s;
+    }
+    .card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+    }
+</style>

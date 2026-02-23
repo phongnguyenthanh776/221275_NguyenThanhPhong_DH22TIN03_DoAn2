@@ -1,0 +1,75 @@
+@{
+    ViewData["Title"] = "Trang chủ";
+}
+
+<!-- Hero Section -->
+<div class="row mb-5">
+    <div class="col-12">
+        <div class="card border-0" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white;">
+            <div class="card-body py-5 text-center">
+                <h1 class="display-4 fw-bold"><i class="bi bi-heart-pulse"></i> Health Management System</h1>
+                <p class="lead mt-3">Hệ thống quản lý và theo dõi sức khỏe cá nhân thông minh với hỗ trợ AI</p>
+                <div class="mt-4">
+                    @if (User.Identity?.IsAuthenticated == true)
+                    {
+                        <a asp-controller="Home" asp-action="Dashboard" class="btn btn-light btn-lg mx-2">
+                            <i class="bi bi-speedometer2"></i> Dashboard
+                        </a>
+                        <a asp-controller="Prediction" asp-action="Predict" class="btn btn-outline-light btn-lg mx-2">
+                            <i class="bi bi-robot"></i> Dự đoán AI
+                        </a>
+                    }
+                    else
+                    {
+                        <a asp-controller="Account" asp-action="Register" class="btn btn-light btn-lg mx-2">
+                            <i class="bi bi-person-plus"></i> Đăng ký ngay
+                        </a>
+                        <a asp-controller="Account" asp-action="Login" class="btn btn-outline-light btn-lg mx-2">
+                            <i class="bi bi-box-arrow-in-right"></i> Đăng nhập
+                        </a>
+                    }
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Features -->
+<div class="row mb-5">
+    <div class="col-md-6 mb-3">
+        <div class="card h-100 text-center">
+            <div class="card-body">
+                <div class="display-4 text-primary mb-3"><i class="bi bi-graph-up-arrow"></i></div>
+                <h5 class="card-title">Theo dõi Sức khỏe</h5>
+                <p class="card-text">Ghi nhận và theo dõi các chỉ số sức khỏe: BMI, huyết áp, nhịp tim, đường huyết...</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-6 mb-3">
+        <div class="card h-100 text-center">
+            <div class="card-body">
+                <div class="display-4 text-success mb-3"><i class="bi bi-robot"></i></div>
+                <h5 class="card-title">Dự đoán bằng AI</h5>
+                <p class="card-text">Dự đoán nguy cơ sức khỏe dựa trên Machine Learning từ Kaggle dataset.</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Call to Action -->
+@if (User.Identity?.IsAuthenticated != true)
+{
+    <div class="row mt-5">
+        <div class="col-12">
+            <div class="card bg-primary text-white text-center">
+                <div class="card-body py-5">
+                    <h3>Sẵn sàng bắt đầu hành trình sức khỏe?</h3>
+                    <p class="lead mt-3">Đăng ký ngay để trải nghiệm đầy đủ tính năng!</p>
+                    <a asp-controller="Account" asp-action="Register" class="btn btn-light btn-lg mt-3">
+                        <i class="bi bi-person-plus"></i> Đăng ký miễn phí
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+}

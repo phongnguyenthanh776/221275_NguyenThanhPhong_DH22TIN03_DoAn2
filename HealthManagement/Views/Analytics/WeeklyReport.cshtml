@@ -1,0 +1,205 @@
+@using HealthManagement.Services
+@using HealthManagement.Models
+@model WeeklyHealthReport
+
+@{
+    ViewData["Title"] = "Báo Cáo Sức Khỏe Tuần";
+}
+
+<div class="container mt-4">
+    <div class="row mb-4">
+        <div class="col-12">
+            <h2><i class="bi bi-calendar-week"></i> Báo Cáo Sức Khỏe Hàng Tuần</h2>
+            <p class="text-muted">
+                Từ @Model.WeekStart.ToString("dd/MM/yyyy") đến @Model.WeekEnd.ToString("dd/MM/yyyy")
+            </p>
+        </div>
+    </div>
+
+    <!-- SUMMARY STATS -->
+    <div class="row mb-4">
+        <div class="col-md-3">
+            <div class="card text-white bg-primary shadow">
+                <div class="card-body text-center">
+                    <h3 class="card-title display-4">@Model.TotalHealthChecks</h3>
+                    <p class="card-text">Lần Kiểm Tra</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card text-white bg-info shadow">
+                <div class="card-body text-center">
+                    <h3 class="card-title display-4">@Model.TotalPredictions</h3>
+                    <p class="card-text">Lần Dự Đoán</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card text-white bg-dark shadow">
+                <div class="card-body text-center">
+                    <h3 class="card-title display-4">@Model.AverageRiskLevel.ToString("F1")%</h3>
+                    <p class="card-text">Rủi Ro AI (TB)</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-6">
+            <div class="card border-success shadow">
+                <div class="card-body">
+                    <h5 class="card-title">Tình Trạng Sức Khỏe</h5>
+                    <h2 class="text-center mb-0">@Model.HealthStatus</h2>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- AVERAGE METRICS -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card shadow-sm">
+                <div class="card-header bg-success text-white">
+                    <h5 class="mb-0"><i class="bi bi-graph-up"></i> Chỉ Số Trung Bình Tuần Này</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row text-center">
+                        <div class="col-md-3 mb-3">
+                            <div class="p-3 border rounded">
+                                <h6 class="text-muted">Huyết Áp</h6>
+                                <h4 class="mb-0">@Model.AverageBloodPressure</h4>
+                            </div>
+                        </div>
+                        <div class="col-md-3 mb-3">
+                            <div class="p-3 border rounded">
+                                <h6 class="text-muted">Đường Huyết</h6>
+                                <h4 class="mb-0">@Model.AverageBloodSugar</h4>
+                            </div>
+                        </div>
+                        <div class="col-md-3 mb-3">
+                            <div class="p-3 border rounded">
+                                <h6 class="text-muted">Cholesterol</h6>
+                                <h4 class="mb-0">@Model.AverageCholesterol</h4>
+                            </div>
+                        </div>
+                        <div class="col-md-3 mb-3">
+                            <div class="p-3 border rounded">
+                                <h6 class="text-muted">Nhịp Tim</h6>
+                                <h4 class="mb-0">@Model.AverageHeartRate</h4>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- HIGHEST RISK DISEASE -->
+    @if (Model.HighestRiskDisease != "Chưa dự đoán")
+    {
+        <div class="row mb-4">
+            <div class="col-12">
+                <div class="alert alert-warning" role="alert">
+                    <h5 class="alert-heading"><i class="bi bi-exclamation-triangle"></i> Bệnh Có Nguy Cơ Cao Nhất</h5>
+                    <p class="mb-0">
+                        <strong>@Model.HighestRiskDisease</strong> - Hãy chú ý theo dõi và tham khảo ý kiến bác sĩ nếu cần.
+                    </p>
+                </div>
+            </div>
+        </div>
+    }
+
+    <!-- RECOMMENDATIONS -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card shadow-sm">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="mb-0"><i class="bi bi-lightbulb-fill"></i> Khuyến Nghị Cải Thiện Sức Khỏe</h5>
+                </div>
+                <div class="card-body">
+                    @if (Model.Recommendations.Any())
+                    {
+                        <ul class="list-group list-group-flush">
+                            @foreach (var recommendation in Model.Recommendations)
+                            {
+                                <li class="list-group-item">
+                                    <i class="bi bi-check-circle text-success"></i> @recommendation
+                                </li>
+                            }
+                        </ul>
+                    }
+                    else
+                    {
+                        <p class="text-muted mb-0">Không có khuyến nghị đặc biệt. Hãy tiếp tục duy trì!</p>
+                    }
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- AI PREDICTIONS -->
+    @if (Model.AiPredictions.Any())
+    {
+        <div class="row mb-4">
+            <div class="col-12">
+                <div class="card shadow-sm">
+                    <div class="card-header bg-dark text-white">
+                        <h5 class="mb-0"><i class="bi bi-robot"></i> Dự Đoán AI Trong Tuần</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="row">
+                            @foreach (var pred in Model.AiPredictions)
+                            {
+                                var severityClass = pred.Result.ToLower().Contains("cao") ? "danger" :
+                                                   pred.Result.ToLower().Contains("trung") ? "warning" : "success";
+                                <div class="col-md-3 mb-3">
+                                    <div class="border rounded p-3 h-100">
+                                        <p class="text-muted mb-1">@pred.DiseaseType</p>
+                                        <h5 class="text-@severityClass mb-1">@pred.Result</h5>
+                                        <p class="mb-1">Rủi ro: <strong>@pred.RiskLevel.ToString("F1")%</strong></p>
+                                        <small class="text-muted">@pred.Recommendation</small>
+                                    </div>
+                                </div>
+                            }
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    }
+
+    <!-- PRINT & SHARE -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card shadow-sm">
+                <div class="card-body">
+                    <h5 class="card-title"><i class="bi bi-share"></i> Chia Sẻ Báo Cáo</h5>
+                    <p class="text-muted">Bạn có thể in hoặc chia sẻ báo cáo này với bác sĩ của mình.</p>
+                    <button class="btn btn-outline-primary" onclick="window.print()">
+                        <i class="bi bi-printer"></i> In Báo Cáo
+                    </button>
+                    <button class="btn btn-outline-secondary" onclick="shareReport()">
+                        <i class="bi bi-envelope"></i> Gửi Email
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ACTIONS -->
+    <div class="row">
+        <div class="col-12 text-center">
+            <a href="@Url.Action("Dashboard", "Analytics")" class="btn btn-primary btn-lg">
+                <i class="bi bi-graph-up-arrow"></i> Xem Phân Tích Chi Tiết
+            </a>
+            <a href="@Url.Action("Index", "Home")" class="btn btn-secondary btn-lg">
+                <i class="bi bi-house"></i> Trang Chủ
+            </a>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        function shareReport() {
+            alert('Tính năng gửi email đang được phát triển. Vui lòng sử dụng nút In để lưu báo cáo.');
+        }
+    </script>
+}

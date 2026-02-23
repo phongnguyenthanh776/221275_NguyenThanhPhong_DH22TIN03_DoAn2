@@ -1,0 +1,63 @@
+@model List<DuDoanAI>
+
+@{
+    ViewData["Title"] = "Lịch sử dự đoán";
+}
+
+<div class="row mb-4">
+    <div class="col-12">
+        <h2><i class="bi bi-clock-history"></i> Lịch sử dự đoán AI</h2>
+        <p class="text-muted">Các lần dự đoán nguy cơ sức khỏe</p>
+    </div>
+</div>
+
+@if (Model != null && Model.Any())
+{
+    <div class="row">
+        @foreach (var pred in Model)
+        {
+            var riskColor = pred.KetQua.Contains("cao") ? "danger" : pred.KetQua.Contains("trung bình") ? "warning" : "success";
+            
+            <div class="col-md-6 mb-4">
+                <div class="card h-100">
+                    <div class="card-header bg-@riskColor text-white">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <span><i class="bi bi-robot"></i> @pred.LoaiBenhDuDoan.ToString()</span>
+                            <small>@pred.NgayDuDoan.ToString("dd/MM/yyyy HH:mm")</small>
+                        </div>
+                    </div>
+                    <div class="card-body">
+                        <div class="d-flex justify-content-between align-items-center mb-3">
+                            <h5 class="mb-0">@pred.KetQua</h5>
+                            <h4 class="text-@riskColor mb-0">@pred.MucDoNguyCo.ToString("0.0")%</h4>
+                        </div>
+                        
+                        <div class="progress mb-3" style="height: 20px;">
+                            <div class="progress-bar bg-@riskColor" role="progressbar" style="width: @pred.MucDoNguyCo%"></div>
+                        </div>
+
+                        <div class="alert alert-light mb-2">
+                            <small><strong>Chi tiết:</strong> @pred.ChiTietDuDoan</small>
+                        </div>
+
+                        <div class="alert alert-info mb-0">
+                            <small><i class="bi bi-lightbulb"></i> <strong>Lời khuyên:</strong> @pred.GoiY</small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        }
+    </div>
+
+    <div class="text-center mt-3">
+        <a asp-action="Predict" class="btn btn-primary">
+            <i class="bi bi-plus-circle"></i> Dự đoán mới
+        </a>
+    </div>
+}
+else
+{
+    <div class="alert alert-info">
+        <i class="bi bi-info-circle"></i> Chưa có dự đoán nào. <a asp-action="Predict" class="alert-link">Dự đoán ngay</a>
+    </div>
+}

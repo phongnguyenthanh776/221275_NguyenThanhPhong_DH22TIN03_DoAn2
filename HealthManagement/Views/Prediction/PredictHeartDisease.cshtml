@@ -1,0 +1,83 @@
+@model HeartDiseaseRequest
+
+@{
+    ViewData["Title"] = "Dự đoán Bệnh Tim";
+}
+
+<div class="row justify-content-center">
+    <div class="col-md-7">
+        <div class="card">
+            <div class="card-header bg-danger text-white">
+                <h4><i class="bi bi-heart-fill"></i> Dự đoán Bệnh Tim</h4>
+            </div>
+            <div class="card-body">
+                <div class="alert alert-warning mb-4">
+                    <strong><i class="bi bi-exclamation-triangle"></i> Lưu ý:</strong> Đây là công cụ hỗ trợ dự đoán. Vui lòng tham khảo bác sĩ!
+                </div>
+
+                <form asp-action="PredictHeartDisease" method="post">
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label asp-for="Age" class="form-label fw-bold">Tuổi *</label>
+                            <input asp-for="Age" type="number" class="form-control" placeholder="30-80" min="20" max="120" required />
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label asp-for="Sex" class="form-label fw-bold">Giới tính *</label>
+                            <select asp-for="Sex" class="form-select" required>
+                                <option value="">-- Chọn --</option>
+                                <option value="1">Nam</option>
+                                <option value="0">Nữ</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label asp-for="RestingBP" class="form-label fw-bold">Huyết áp (mmHg) *</label>
+                            <input asp-for="RestingBP" type="number" class="form-control" placeholder="90-180" min="40" max="250" required />
+                            <small class="text-muted">Số đầu tiên của phép đo</small>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label asp-for="Cholesterol" class="form-label fw-bold">Cholesterol (mg/dL) *</label>
+                            <input asp-for="Cholesterol" type="number" class="form-control" placeholder="150-350" min="0" max="500" required />
+                            <small class="text-muted">Từ xét nghiệm máu</small>
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label asp-for="MaxHR" class="form-label fw-bold">Nhịp tim tối đa (bpm) *</label>
+                            <input asp-for="MaxHR" type="number" class="form-control" placeholder="60-220" min="40" max="250" required />
+                            <small class="text-muted">Ước tính: 220 - Tuổi</small>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label asp-for="ChestPainType" class="form-label fw-bold">Đau ngực *</label>
+                            <select asp-for="ChestPainType" class="form-select" required>
+                                <option value="">-- Chọn --</option>
+                                <option value="0">Không có</option>
+                                <option value="1">Điển hình</option>
+                                <option value="2">Không điển hình</option>
+                                <option value="3">Khác</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="d-grid gap-2 mt-4">
+                        <button type="submit" class="btn btn-danger btn-lg">
+                            <i class="bi bi-play-circle"></i> Dự đoán Ngay
+                        </button>
+                        <a href="/Prediction/SelectDisease" class="btn btn-outline-secondary">
+                            <i class="bi bi-arrow-left"></i> Chọn bệnh khác
+                        </a>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    @{
+        await Html.RenderPartialAsync("_ValidationScriptsPartial");
+    }
+}

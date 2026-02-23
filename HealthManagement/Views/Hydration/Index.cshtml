@@ -1,0 +1,234 @@
+@model HealthManagement.Controllers.HydrationViewModel
+@{
+    ViewData["Title"] = "Uống nước";
+}
+<div class="row g-4">
+    <div class="col-lg-4">
+        <div class="card">
+            <div class="card-header">Ghi nhận uống nước</div>
+            <div class="card-body">
+                <form asp-action="Add" method="post">
+                    <div asp-validation-summary="ModelOnly" class="text-danger"></div>
+                    <div class="mb-3">
+                        <label asp-for="Form.SoMl" class="form-label"></label>
+                        <input asp-for="Form.SoMl" class="form-control" />
+                        <span asp-validation-for="Form.SoMl" class="text-danger"></span>
+                    </div>
+                    <div class="mb-3">
+                        <label asp-for="Form.ThoiGian" class="form-label"></label>
+                        <input asp-for="Form.ThoiGian" class="form-control" type="datetime-local" asp-format="yyyy-MM-ddTHH:mm" step="60" lang="en-GB" value='@Model.Form.ThoiGian.ToString("yyyy-MM-ddTHH:mm")' />
+                        <span asp-validation-for="Form.ThoiGian" class="text-danger"></span>
+                    </div>
+                    <div class="mb-3">
+                        <label asp-for="Form.GhiChu" class="form-label"></label>
+                        <input asp-for="Form.GhiChu" class="form-control" />
+                    </div>
+                    <button type="submit" class="btn btn-primary"><i class="bi bi-droplet"></i> Lưu</button>
+                </form>
+            </div>
+        </div>
+        <div class="card mt-3">
+            <div class="card-header">Tổng theo ngày (7 ngày)</div>
+            <div class="card-body">
+                @if (Model.TotalsByDate.Any())
+                {
+                    <ul class="list-group list-group-flush">
+                        @foreach (var item in Model.TotalsByDate.OrderByDescending(x => x.Key))
+                        {
+                            <li class="list-group-item d-flex justify-content-between">
+                                <span>@item.Key.ToString("dd/MM/yyyy")</span>
+                                <strong>@item.Value ml</strong>
+                            </li>
+                        }
+                    </ul>
+                }
+                else
+                {
+                    <p class="text-muted">Chưa có dữ liệu.</p>
+                }
+            </div>
+        </div>
+        <div class="card mt-3">
+            <div class="card-header">Nhắc uống nước</div>
+            <div class="card-body">
+                <form asp-action="AddReminder" method="post" class="row g-2">
+                    <div class="col-8">
+                        <label class="form-label">Giờ nhắc</label>
+                        <input asp-for="ReminderForm.GioNhac" class="form-control" type="datetime-local" asp-format="yyyy-MM-ddTHH:mm" step="60" lang="en-GB" value='@(Model.ReminderForm != null ? Model.ReminderForm.GioNhac.ToString("yyyy-MM-ddTHH:mm") : "")' />
+                        <span asp-validation-for="ReminderForm.GioNhac" class="text-danger"></span>
+                    </div>
+                    <div class="col-4">
+                        <label class="form-label">Số ml</label>
+                        <input asp-for="ReminderForm.SoMl" class="form-control" />
+                        <span asp-validation-for="ReminderForm.SoMl" class="text-danger"></span>
+                    </div>
+                    <div class="col-12">
+                        <label class="form-label">Ghi chú</label>
+                        <input asp-for="ReminderForm.GhiChu" class="form-control" />
+                    </div>
+                    <div class="col-12 d-grid">
+                        <button type="submit" class="btn btn-outline-primary"><i class="bi bi-alarm"></i> Thêm nhắc</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+    <div class="col-lg-8">
+        <div class="card">
+            <div class="card-header">Lịch sử uống nước</div>
+            <div class="card-body">
+                @if (Model.Logs.Any())
+                {
+                    <div class="table-responsive">
+                        <table class="table align-middle">
+                            <thead>
+                                <tr>
+                                    <th>Thời gian</th>
+                                    <th>Số ml</th>
+                                    <th>Ghi chú</th>
+                                    <th></th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach (var item in Model.Logs)
+                                {
+                                    <tr>
+                                        <td>@item.ThoiGian.ToString("dd/MM/yyyy HH:mm")</td>
+                                        <td>@item.SoMl ml</td>
+                                        <td>@(string.IsNullOrEmpty(item.GhiChu) ? "-" : item.GhiChu)</td>
+                                        <td class="text-end">
+                                            <a class="btn btn-sm btn-outline-primary" asp-action="Edit" asp-route-id="@item.MaUongNuoc"><i class="bi bi-pencil"></i></a>
+                                            <form asp-action="Delete" method="post" class="d-inline" onsubmit="return confirm('Xóa bản ghi này?');">
+                                                <input type="hidden" name="id" value="@item.MaUongNuoc" />
+                                                <button type="submit" class="btn btn-sm btn-outline-danger"><i class="bi bi-trash"></i></button>
+                                            </form>
+                                        </td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+                }
+                else
+                {
+                    <p class="text-muted">Chưa có dữ liệu.</p>
+                }
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row g-4 mt-3">
+    <div class="col-lg-12">
+        <div class="card">
+            <div class="card-header">Danh sách nhắc uống nước (7 ngày)</div>
+            <div class="card-body">
+                @if (Model.Reminders.Any())
+                {
+                    <div class="table-responsive">
+                        <table class="table align-middle">
+                            <thead>
+                                <tr>
+                                    <th>Giờ</th>
+                                    <th>Số ml</th>
+                                    <th>Ghi chú</th>
+                                    <th>Email</th>
+                                    <th>Uống nước</th>
+                                    <th></th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach (var r in Model.Reminders)
+                                {
+                                    <tr>
+                                        <td>@r.GioNhac.ToString("dd/MM/yyyy HH:mm")</td>
+                                        <td>@(r.SoMl.HasValue ? r.SoMl + " ml" : "-")</td>
+                                        <td>@(string.IsNullOrEmpty(r.GhiChu) ? "-" : r.GhiChu)</td>
+                                        <td>
+                                            <span class="badge @(r.DaGuiEmail ? "bg-info" : "bg-secondary")">
+                                                @(r.DaGuiEmail ? "Đã gửi" : "Chưa gửi")
+                                            </span>
+                                        </td>
+                                        <td>
+                                            <form asp-action="ToggleReminder" method="post" class="d-inline">
+                                                <input type="hidden" name="id" value="@r.MaNhac" />
+                                                <button type="submit" class="btn btn-sm @(r.DaUong ? "btn-success" : "btn-outline-secondary")">
+                                                    @(r.DaUong ? "Đã uống" : "Chưa")
+                                                </button>
+                                            </form>
+                                        </td>
+                                        <td class="text-end">
+                                            <form asp-action="DeleteReminder" method="post" class="d-inline" onsubmit="return confirm('Xóa nhắc này?');">
+                                                <input type="hidden" name="id" value="@r.MaNhac" />
+                                                <button type="submit" class="btn btn-sm btn-outline-danger"><i class="bi bi-x"></i></button>
+                                            </form>
+                                        </td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+                }
+                else
+                {
+                    <p class="text-muted">Chưa có nhắc nhở.</p>
+                }
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+    <script>
+        (() => {
+            // Nhắc trong trình duyệt: kiểm tra nhắc chưa uống, đến giờ hoặc trễ <= 10 phút
+            const reminders = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(
+                Model.Reminders
+                    .Where(r => !r.DaUong)
+                    .Select(r => new {
+                        id = r.MaNhac,
+                        time = r.GioNhac.ToString("o"),
+                        note = r.GhiChu,
+                        soMl = r.SoMl
+                    })
+            ));
+
+            if (!Array.isArray(reminders) || reminders.length === 0) return;
+
+            const notified = new Set();
+            const windowMs = 10 * 60 * 1000; // 10 phút
+
+            // Nếu hỗ trợ Notification API, xin quyền ngay khi vào trang
+            if ("Notification" in window && Notification.permission === "default") {
+                Notification.requestPermission();
+            }
+
+            function notify(msg) {
+                if ("Notification" in window && Notification.permission === "granted") {
+                    new Notification(msg);
+                } else {
+                    alert(msg);
+                }
+            }
+
+            function checkReminders() {
+                const now = new Date();
+                reminders.forEach(r => {
+                    if (notified.has(r.id)) return;
+                    const t = new Date(r.time);
+                    const diffMs = now - t; // dương nghĩa là đã quá giờ
+                    if (diffMs >= 0 && diffMs <= windowMs) {
+                        const ml = r.soMl ? `${r.soMl} ml` : '';
+                        const msg = `Đến giờ uống nước ${ml}${r.note ? ' - ' + r.note : ''}`.trim();
+                        notify(msg);
+                        notified.add(r.id);
+                    }
+                });
+            }
+
+            checkReminders();
+            setInterval(checkReminders, 30 * 1000);
+        })();
+    </script>
+}

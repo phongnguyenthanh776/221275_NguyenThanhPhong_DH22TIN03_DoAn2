@@ -1,0 +1,105 @@
+@model ChiSoSucKhoe
+
+@{
+    ViewData["Title"] = "Nhập chỉ số sức khỏe";
+}
+
+<div class="row justify-content-center">
+    <div class="col-md-8">
+        <div class="card">
+            <div class="card-header">
+                <h4><i class="bi bi-heart-pulse"></i> Nhập chỉ số sức khỏe</h4>
+            </div>
+            <div class="card-body">
+                <form asp-action="AddMetric" method="post">
+                    <div asp-validation-summary="All" class="text-danger mb-3"></div>
+
+                    <div class="alert alert-info mb-3">
+                        <i class="bi bi-info-circle"></i> <strong>Chỉ cần nhập 3 chỉ số chính (*) là có thể dự đoán.</strong> Các chỉ số khác là tùy chọn để kết quả chính xác hơn.
+                    </div>
+
+                    <h5 class="mb-3 text-primary">📌 Chỉ Số Bắt Buộc</h5>
+
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label asp-for="HuyetApTam" class="form-label"><strong>Huyết Áp Tâm Thu (Systolic) *</strong></label>
+                            <div class="input-group">
+                                <input asp-for="HuyetApTam" class="form-control" placeholder="120" required />
+                                <span class="input-group-text">mmHg</span>
+                            </div>
+                            <span asp-validation-for="HuyetApTam" class="text-danger d-block"></span>
+                        </div>
+
+                        <div class="col-md-6 mb-3">
+                            <label asp-for="DuongHuyet" class="form-label"><strong>Đường Huyết (Glucose) *</strong></label>
+                            <div class="input-group">
+                                <input asp-for="DuongHuyet" class="form-control" placeholder="100" required />
+                                <span class="input-group-text">mg/dL</span>
+                            </div>
+                            <span asp-validation-for="DuongHuyet" class="text-danger d-block"></span>
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label asp-for="Cholesterol" class="form-label"><strong>Cholesterol *</strong></label>
+                            <div class="input-group">
+                                <input asp-for="Cholesterol" class="form-control" placeholder="180" required />
+                                <span class="input-group-text">mg/dL</span>
+                            </div>
+                            <span asp-validation-for="Cholesterol" class="text-danger d-block"></span>
+                        </div>
+                    </div>
+
+                    <hr class="my-4">
+                    <h5 class="mb-3 text-secondary">📋 Chỉ Số Tùy Chọn (để kết quả chính xác hơn)</h5>
+
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label asp-for="HuyetApThan" class="form-label">Huyết Áp Tâm Trương (Diastolic)</label>
+                            <div class="input-group">
+                                <input asp-for="HuyetApThan" class="form-control" placeholder="80" />
+                                <span class="input-group-text">mmHg</span>
+                            </div>
+                            <span asp-validation-for="HuyetApThan" class="text-danger d-block"></span>
+                        </div>
+
+                        <div class="col-md-6 mb-3">
+                            <label asp-for="NhipTim" class="form-label">Nhịp Tim (Heart Rate)</label>
+                            <div class="input-group">
+                                <input asp-for="NhipTim" class="form-control" placeholder="75" />
+                                <span class="input-group-text">bpm</span>
+                            </div>
+                            <span asp-validation-for="NhipTim" class="text-danger d-block"></span>
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label asp-for="ChiSoOxy" class="form-label">Chỉ Số Oxy - SpO2</label>
+                            <div class="input-group">
+                                <input asp-for="ChiSoOxy" class="form-control" placeholder="98" />
+                                <span class="input-group-text">%</span>
+                            </div>
+                            <span asp-validation-for="ChiSoOxy" class="text-danger d-block"></span>
+                        </div>
+                    </div>
+
+                    <div class="d-grid gap-2 mt-4">
+                        <button type="submit" class="btn btn-primary btn-lg" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); border: none;">
+                            <i class="bi bi-check-circle"></i> Lưu Chỉ Số &amp; Tiếp Tục
+                        </button>
+                    </div>
+
+                    <a href="@Url.Action("Index", "Health")" class="btn btn-outline-secondary w-100 mt-2">
+                        <i class="bi bi-arrow-left"></i> Quay Lại
+                    </a>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+    @section Scripts {
+        <partial name="_ValidationScriptsPartial" />
+    }

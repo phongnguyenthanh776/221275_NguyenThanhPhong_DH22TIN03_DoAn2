@@ -1,0 +1,353 @@
+@model HealthManagement.ViewModels.DashboardViewModel
+@{
+    ViewData["Title"] = "Dashboard";
+    var bmiHistory = Model.BMIHistory ?? new List<LichSuBMI>();
+    var healthMetrics = Model.HealthMetrics ?? new List<ChiSoSucKhoe>();
+    var predictionHistory = Model.PredictionHistory ?? new List<DuDoanAI>();
+    var latestMetric = Model.LatestMetric ?? healthMetrics.FirstOrDefault();
+}
+
+<div class="row mb-4">
+    <div class="col-12">
+        <h2><i class="bi bi-speedometer2"></i> Dashboard - Chào @Model.NguoiDung.HoTen!</h2>
+        <p class="text-muted">Tổng quan sức khỏe của bạn</p>
+    </div>
+</div>
+
+<!-- Stats Cards -->
+<div class="row mb-4">
+    <div class="col-md-3 mb-3">
+        <div class="stat-card">
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <h6 class="mb-1">BMI hiện tại</h6>
+                    <h3 class="mb-0">@(bmiHistory.Any() ? bmiHistory.First().BMI.ToString("0.0") : "N/A")</h3>
+                    <small>Đánh giá và khuyến nghị do AI cung cấp</small>
+                </div>
+                <i class="bi bi-speedometer display-4"></i>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3 mb-3">
+        <div class="stat-card" style="background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);">
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <h6 class="mb-1">Huyết áp</h6>
+                    <h3 class="mb-0">@(latestMetric?.HuyetApTam.HasValue == true ? $"{latestMetric.HuyetApTam}/{latestMetric.HuyetApThan}" : "N/A")</h3>
+                    <small>mmHg · Nhịp tim @(latestMetric?.NhipTim?.ToString() ?? "-")</small>
+                </div>
+                <i class="bi bi-heart-pulse display-4"></i>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3 mb-3">
+        <div class="stat-card" style="background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);">
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <h6 class="mb-1">Giấc ngủ (7 ngày)</h6>
+                    <h3 class="mb-0">@(Model.AverageSleepHours?.ToString("0.0") ?? "N/A")h</h3>
+                    <small>Đêm gần nhất: @(Model.LastSleepHours?.ToString("0.0") ?? "N/A")h</small>
+                </div>
+                <i class="bi bi-moon-stars display-4"></i>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3 mb-3">
+        <div class="stat-card" style="background: linear-gradient(135deg, #43e97b 0%, #38f9d7 100%);">
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <h6 class="mb-1">Uống nước (7 ngày)</h6>
+                    <h3 class="mb-0">@Model.TotalWaterMlWeek ml</h3>
+                    <small>Hôm nay: @Model.TodayWaterMl ml</small>
+                </div>
+                <i class="bi bi-droplet display-4"></i>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row mb-4">
+    <div class="col-md-6 mb-3">
+        <div class="card">
+            <div class="card-header">
+                <i class="bi bi-moon"></i> Giấc ngủ tuần này
+            </div>
+            <div class="card-body">
+                @if (Model.SleepLogs.Any())
+                {
+                    <ul class="list-group list-group-flush">
+                        @foreach (var log in Model.SleepLogs.Take(5))
+                        {
+                            <li class="list-group-item d-flex justify-content-between align-items-center">
+                                <span>@log.GioNgu:dd/MM - @log.GioDay:HH\:mm</span>
+                                <span class="badge bg-primary">@log.TongGio.ToString("0.0")h</span>
+                            </li>
+                        }
+                    </ul>
+                }
+                else
+                {
+                    <div class="alert alert-info mb-0">
+                        <i class="bi bi-info-circle"></i> Chưa có dữ liệu giấc ngủ. <a asp-controller="Sleep" asp-action="Index">Thêm ngay</a>
+                    </div>
+                }
+            </div>
+        </div>
+    </div>
+    <div class="col-md-6 mb-3">
+        <div class="card">
+            <div class="card-header">
+                <i class="bi bi-droplet-half"></i> Uống nước tuần này
+            </div>
+            <div class="card-body">
+                @if (Model.WaterLogs.Any())
+                {
+                    <ul class="list-group list-group-flush">
+                        @foreach (var log in Model.WaterLogs.Take(5))
+                        {
+                            <li class="list-group-item d-flex justify-content-between align-items-center">
+                                <span>@log.ThoiGian:dd/MM HH\:mm</span>
+                                <span class="badge bg-success">@log.SoMl ml</span>
+                            </li>
+                        }
+                    </ul>
+                }
+                else
+                {
+                    <div class="alert alert-info mb-0">
+                        <i class="bi bi-info-circle"></i> Chưa có dữ liệu uống nước. <a asp-controller="Hydration" asp-action="Index">Thêm ngay</a>
+                    </div>
+                }
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Charts -->
+<div class="row">
+    <!-- BMI Chart -->
+    <div class="col-md-6 mb-4">
+        <div class="card">
+            <div class="card-header">
+                <i class="bi bi-graph-up"></i> Biểu đồ BMI (7 ngày gần nhất)
+            </div>
+            <div class="card-body">
+                @if (bmiHistory.Any())
+                {
+                    <canvas id="bmiChart"></canvas>
+                }
+                else
+                {
+                    <div class="alert alert-info">
+                        <i class="bi bi-info-circle"></i> Chưa có dữ liệu BMI. <a asp-controller="Health" asp-action="CalculateBMI">Tính BMI ngay</a>
+                    </div>
+                }
+            </div>
+        </div>
+    </div>
+
+    <!-- Blood Pressure Chart -->
+    <div class="col-md-6 mb-4">
+        <div class="card">
+            <div class="card-header">
+                <i class="bi bi-heart-pulse"></i> Biểu đồ Huyết áp (7 ngày gần nhất)
+            </div>
+            <div class="card-body">
+                @if (healthMetrics.Any(h => h.HuyetApTam.HasValue))
+                {
+                    <canvas id="bpChart"></canvas>
+                }
+                else
+                {
+                    <div class="alert alert-info">
+                        <i class="bi bi-info-circle"></i> Chưa có dữ liệu huyết áp. <a asp-controller="Health" asp-action="AddMetric">Nhập chỉ số</a>
+                    </div>
+                }
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Latest Predictions -->
+@if (predictionHistory.Any())
+{
+    <div class="row">
+        <div class="col-12 mb-4">
+            <div class="card">
+                <div class="card-header">
+                    <i class="bi bi-clock-history"></i> Dự đoán gần đây
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-hover">
+                            <thead>
+                                <tr>
+                                    <th>Ngày</th>
+                                    <th>Loại dự đoán</th>
+                                    <th>Kết quả</th>
+                                    <th>Mức độ</th>
+                                    <th></th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach (var pred in predictionHistory.Take(5))
+                                {
+                                    <tr>
+                                        <td>@pred.NgayDuDoan.ToString("dd/MM/yyyy HH:mm")</td>
+                                        <td><span class="badge bg-info">@pred.LoaiBenhDuDoan.ToString()</span></td>
+                                        <td>
+                                            <span class="badge @(pred.KetQua.Contains("cao") ? "bg-danger" : pred.KetQua.Contains("trung bình") ? "bg-warning" : "bg-success")">
+                                                @pred.KetQua
+                                            </span>
+                                        </td>
+                                        <td>@pred.MucDoNguyCo.ToString("0.0")%</td>
+                                        <td>
+                                            <button class="btn btn-sm btn-outline-primary" onclick="viewDetails(@pred.MaDuDoan)">
+                                                <i class="bi bi-eye"></i>
+                                            </button>
+                                        </td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+                    <div class="text-center">
+                        <a asp-controller="Prediction" asp-action="History" class="btn btn-outline-primary">
+                            Xem tất cả <i class="bi bi-arrow-right"></i>
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+}
+
+<!-- Quick Actions -->
+<div class="row">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <i class="bi bi-lightning"></i> Thao tác nhanh
+            </div>
+            <div class="card-body">
+                <div class="row text-center">
+                    <div class="col-md-3 mb-3">
+                        <a asp-controller="Health" asp-action="CalculateBMI" class="text-decoration-none">
+                            <div class="p-4 border rounded hover-shadow">
+                                <i class="bi bi-calculator display-4 text-primary"></i>
+                                <p class="mt-2 mb-0">Tính BMI</p>
+                            </div>
+                        </a>
+                    </div>
+                    <div class="col-md-3 mb-3">
+                        <a asp-controller="Health" asp-action="AddMetric" class="text-decoration-none">
+                            <div class="p-4 border rounded hover-shadow">
+                                <i class="bi bi-plus-circle display-4 text-success"></i>
+                                <p class="mt-2 mb-0">Nhập chỉ số</p>
+                            </div>
+                        </a>
+                    </div>
+                    <div class="col-md-3 mb-3">
+                        <a asp-controller="Prediction" asp-action="Predict" class="text-decoration-none">
+                            <div class="p-4 border rounded hover-shadow">
+                                <i class="bi bi-robot display-4 text-warning"></i>
+                                <p class="mt-2 mb-0">Dự đoán AI</p>
+                            </div>
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        // BMI Chart
+        @if (bmiHistory.Any())
+        {
+            <text>
+            const bmiCtx = document.getElementById('bmiChart');
+            new Chart(bmiCtx, {
+                type: 'line',
+                data: {
+                    labels: [@Html.Raw(string.Join(",", bmiHistory.Select(b => $"'{b.NgayTinh:dd/MM}'")))],
+                    datasets: [{
+                        label: 'BMI',
+                        data: [@string.Join(",", bmiHistory.Select(b => b.BMI))],
+                        borderColor: '#3b82f6',
+                        backgroundColor: 'rgba(59, 130, 246, 0.1)',
+                        tension: 0.4,
+                        fill: true
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    plugins: {
+                        legend: { display: false }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: false,
+                            min: 15,
+                            max: 35
+                        }
+                    }
+                }
+            });
+            </text>
+        }
+
+        // Blood Pressure Chart
+        @if (healthMetrics.Any(h => h.HuyetApTam.HasValue))
+        {
+            <text>
+            const bpCtx = document.getElementById('bpChart');
+            new Chart(bpCtx, {
+                type: 'line',
+                data: {
+                    labels: [@Html.Raw(string.Join(",", healthMetrics.Where(h => h.HuyetApTam.HasValue).Select(h => $"'{h.NgayDo:dd/MM}'")))],
+                    datasets: [
+                        {
+                            label: 'Tâm thu',
+                            data: [@string.Join(",", healthMetrics.Where(h => h.HuyetApTam.HasValue).Select(h => h.HuyetApTam))],
+                            borderColor: '#ef4444',
+                            backgroundColor: 'rgba(239, 68, 68, 0.1)',
+                            tension: 0.4
+                        },
+                        {
+                            label: 'Tâm trương',
+                            data: [@string.Join(",", healthMetrics.Where(h => h.HuyetApThan.HasValue).Select(h => h.HuyetApThan))],
+                            borderColor: '#10b981',
+                            backgroundColor: 'rgba(16, 185, 129, 0.1)',
+                            tension: 0.4
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    scales: {
+                        y: {
+                            beginAtZero: false,
+                            min: 60,
+                            max: 180
+                        }
+                    }
+                }
+            });
+            </text>
+        }
+
+        function viewDetails(id) {
+            alert('Chi tiết dự đoán #' + id);
+        }
+    </script>
+}
+
+<style>
+    .hover-shadow:hover {
+        box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+        transform: translateY(-2px);
+        transition: all 0.3s;
+    }
+</style>

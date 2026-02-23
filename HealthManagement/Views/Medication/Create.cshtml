@@ -1,0 +1,53 @@
+@model HealthManagement.Models.Thuoc
+@{
+    ViewData["Title"] = "Thêm thuốc";
+}
+<div class="row justify-content-center">
+    <div class="col-lg-6">
+        <div class="card">
+            <div class="card-header">Thêm thuốc</div>
+            <div class="card-body">
+                <form asp-action="Create" method="post">
+                    <div asp-validation-summary="ModelOnly" class="text-danger"></div>
+                    <div class="mb-3">
+                        <label asp-for="Ten" class="form-label"></label>
+                        <input asp-for="Ten" class="form-control" />
+                        <span asp-validation-for="Ten" class="text-danger"></span>
+                    </div>
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <label asp-for="LieuDung" class="form-label"></label>
+                            <input asp-for="LieuDung" class="form-control" />
+                        </div>
+                        <div class="col-md-6">
+                            <label asp-for="DonVi" class="form-label"></label>
+                            <input asp-for="DonVi" class="form-control" />
+                        </div>
+                    </div>
+                    <div class="row g-3 mt-1">
+                        <div class="col-md-6">
+                            <label asp-for="SoLanNgay" class="form-label"></label>
+                            <input asp-for="SoLanNgay" class="form-control" type="number" />
+                        </div>
+                        <div class="col-md-6">
+                            <label asp-for="GhiChu" class="form-label"></label>
+                            <input asp-for="GhiChu" class="form-control" />
+                        </div>
+                    </div>
+                    <div class="form-check mt-3">
+                        <input asp-for="TrangThai" class="form-check-input" />
+                        <label asp-for="TrangThai" class="form-check-label">Còn dùng</label>
+                    </div>
+                    <div class="d-flex gap-2 mt-3">
+                        <button type="submit" class="btn btn-primary"><i class="bi bi-save"></i> Lưu</button>
+                        <a asp-action="Index" class="btn btn-secondary">Hủy</a>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+}

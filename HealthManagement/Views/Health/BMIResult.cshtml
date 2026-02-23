@@ -1,0 +1,65 @@
+@model LichSuBMI
+
+@{
+    ViewData["Title"] = "Kết quả BMI";
+}
+
+<div class="row justify-content-center">
+    <div class="col-md-8">
+        <div class="card border-0 shadow-lg">
+            <div class="card-header text-white text-center py-4" 
+                 style="background: linear-gradient(135deg, #2563eb, #10b981);">
+                <h2 class="mb-0"><i class="bi bi-clipboard-check"></i> Kết quả BMI</h2>
+            </div>
+            <div class="card-body p-5">
+                <div class="text-center mb-4">
+                    <h1 class="display-1 fw-bold text-primary">@Model.BMI.ToString("0.00")</h1>
+                    <h3 class="mb-4">
+                        <span class="badge bg-light text-dark p-3">BMI</span>
+                    </h3>
+                </div>
+
+                <div class="row mb-4">
+                    <div class="col-6 text-center">
+                        <div class="p-3 bg-light rounded">
+                            <i class="bi bi-arrows-vertical text-primary fs-2"></i>
+                            <h5 class="mt-2">Chiều cao</h5>
+                            <h4>@Model.ChieuCao cm</h4>
+                        </div>
+                    </div>
+                    <div class="col-6 text-center">
+                        <div class="p-3 bg-light rounded">
+                            <i class="bi bi-speedometer text-success fs-2"></i>
+                            <h5 class="mt-2">Cân nặng</h5>
+                            <h4>@Model.CanNang kg</h4>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="alert alert-info">
+                    <h5><i class="bi bi-lightbulb"></i> Lời khuyên:</h5>
+                    <p class="mb-1"><strong>Phân loại:</strong> @(!string.IsNullOrWhiteSpace(Model.PhanLoai) ? Model.PhanLoai : "Không xác định")</p>
+                    <p class="mb-0">@(!string.IsNullOrWhiteSpace(Model.GoiY) ? Model.GoiY : "Chưa có khuyến nghị.")</p>
+                </div>
+
+                <div class="alert alert-light">
+                    <small class="text-muted">
+                        <i class="bi bi-calendar"></i> Ngày đo: @Model.NgayTinh.ToString("dd/MM/yyyy HH:mm")
+                    </small>
+                </div>
+
+                <div class="d-grid gap-2 d-md-flex justify-content-md-center mt-4">
+                    <a asp-action="CalculateBMI" class="btn btn-primary">
+                        <i class="bi bi-arrow-repeat"></i> Tính lại
+                    </a>
+                    <a asp-action="BMIHistory" class="btn btn-outline-secondary">
+                        <i class="bi bi-clock-history"></i> Xem lịch sử
+                    </a>
+                    <a asp-controller="Home" asp-action="Dashboard" class="btn btn-outline-primary">
+                        <i class="bi bi-speedometer2"></i> Dashboard
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

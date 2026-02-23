@@ -1,0 +1,52 @@
+@model HealthManagement.Controllers.SleepEditViewModel
+@{
+    ViewData["Title"] = "Chỉnh sửa giấc ngủ";
+}
+<div class="row justify-content-center">
+    <div class="col-lg-6">
+        <div class="card">
+            <div class="card-header">Chỉnh sửa giấc ngủ</div>
+            <div class="card-body">
+                <form asp-action="Edit" method="post">
+                    <input type="hidden" asp-for="Form.MaGiacNgu" />
+                    <div asp-validation-summary="ModelOnly" class="text-danger"></div>
+                    <div class="mb-3">
+                        <label asp-for="Form.GioNgu" class="form-label"></label>
+                        <input asp-for="Form.GioNgu" class="form-control" type="datetime-local" asp-format="yyyy-MM-ddTHH:mm" step="60" lang="en-GB" />
+                        <span asp-validation-for="Form.GioNgu" class="text-danger"></span>
+                    </div>
+                    <div class="mb-3">
+                        <label asp-for="Form.GioDay" class="form-label"></label>
+                        <input asp-for="Form.GioDay" class="form-control" type="datetime-local" asp-format="yyyy-MM-ddTHH:mm" step="60" lang="en-GB" />
+                        <span asp-validation-for="Form.GioDay" class="text-danger"></span>
+                    </div>
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <label asp-for="Form.ChatLuong" class="form-label"></label>
+                            <select asp-for="Form.ChatLuong" class="form-select">
+                                <option value="">-- Chọn chất lượng --</option>
+                                <option>Xuất sắc</option>
+                                <option>Tốt</option>
+                                <option>Bình thường</option>
+                                <option>Kém</option>
+                                <option>Rất kém</option>
+                            </select>
+                        </div>
+                        <div class="col-md-6">
+                            <label asp-for="Form.GhiChu" class="form-label"></label>
+                            <input asp-for="Form.GhiChu" class="form-control" />
+                        </div>
+                    </div>
+                    <div class="d-flex gap-2 mt-3">
+                        <button type="submit" class="btn btn-primary"><i class="bi bi-save"></i> Lưu</button>
+                        <a asp-action="Index" class="btn btn-secondary">Hủy</a>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+}

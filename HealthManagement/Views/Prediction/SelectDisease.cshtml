@@ -1,0 +1,161 @@
+@{
+    ViewData["Title"] = "Chọn loại bệnh dự đoán";
+}
+
+<!-- Breadcrumb Navigation -->
+<nav aria-label="breadcrumb mb-4">
+    <ol class="breadcrumb">
+        <li class="breadcrumb-item"><a href="/Home/Dashboard">Dashboard</a></li>
+        <li class="breadcrumb-item"><a href="/Health">Sức Khỏe</a></li>
+        <li class="breadcrumb-item active" aria-current="page">Dự Đoán AI</li>
+    </ol>
+</nav>
+
+<div class="row mb-4">
+    <div class="col-12">
+        <div>
+            <h2><i class="bi bi-robot"></i> Chọn loại bệnh cần dự đoán</h2>
+            <p class="text-muted">Sử dụng AI để dự đoán nguy cơ mắc bệnh dựa trên các chỉ số sức khỏe của bạn</p>
+        </div>
+    </div>
+</div>
+
+<!-- Info Box -->
+<div class="alert alert-info alert-dismissible fade show" role="alert">
+    <strong>💡 Lưu ý:</strong> Để có dự đoán chính xác, hãy đảm bảo bạn đã cập nhật hộ sơ sức khỏe và chỉ số gần đây.
+    <a href="/Health/AddMetric" class="alert-link">Cập nhật chỉ số ngay</a>
+    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+</div>
+
+<div class="row">
+    <!-- Heart Disease -->
+    <div class="col-lg-6 col-md-12 mb-4">
+        <div class="card h-100 shadow-sm hover-shadow disease-card" style="cursor: pointer; transition: all 0.3s; border-left: 5px solid #dc3545;">
+            <div class="card-body">
+                <div class="text-danger" style="font-size: 3em; margin-bottom: 10px;">
+                    <i class="bi bi-heart-fill"></i>
+                </div>
+                <h5 class="card-title fw-bold">Bệnh Tim</h5>
+                <p class="card-text text-muted">Heart Disease</p>
+                <p class="small">Dự đoán nguy cơ bệnh tim dựa trên:</p>
+                <ul class="small">
+                    <li>Tuổi, Giới tính</li>
+                    <li>Loại đau ngực</li>
+                    <li>Huyết áp, Cholesterol</li>
+                    <li>Nhịp tim tối đa</li>
+                </ul>
+                <a href="/Prediction/PredictHeartDisease" class="btn btn-danger mt-3 w-100">
+                    <i class="bi bi-arrow-right"></i> Dự đoán ngay
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Diabetes -->
+    <div class="col-lg-6 col-md-12 mb-4">
+        <div class="card h-100 shadow-sm hover-shadow disease-card" style="cursor: pointer; transition: all 0.3s; border-left: 5px solid #fd7e14;">
+            <div class="card-body">
+                <div class="text-warning" style="font-size: 3em; margin-bottom: 10px;">
+                    <i class="bi bi-droplet-fill"></i>
+                </div>
+                <h5 class="card-title fw-bold">Bệnh Tiểu Đường</h5>
+                <p class="card-text text-muted">Diabetes</p>
+                <p class="small">Dự đoán nguy cơ bệnh tiểu đường dựa trên:</p>
+                <ul class="small">
+                    <li>Số lần mang thai, Glucose</li>
+                    <li>Huyết áp, Độ dày da</li>
+                    <li>Insulin, BMI</li>
+                    <li>Tuổi</li>
+                </ul>
+                <a href="/Prediction/PredictDiabetes" class="btn btn-warning mt-3 w-100">
+                    <i class="bi bi-arrow-right"></i> Dự đoán ngay
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Hypertension -->
+    <div class="col-lg-6 col-md-12 mb-4">
+        <div class="card h-100 shadow-sm hover-shadow disease-card" style="cursor: pointer; transition: all 0.3s; border-left: 5px solid #dc3545;">
+            <div class="card-body">
+                <div style="color: #dc3545; font-size: 3em; margin-bottom: 10px;">
+                    <i class="bi bi-speedometer2"></i>
+                </div>
+                <h5 class="card-title fw-bold">Huyết Áp Cao</h5>
+                <p class="card-text text-muted">Hypertension</p>
+                <p class="small">Dự đoán nguy cơ huyết áp cao dựa trên:</p>
+                <ul class="small">
+                    <li>Tuổi, Giới tính, BMI</li>
+                    <li>Cholesterol, Huyết áp</li>
+                    <li>Nhịp tim, Hút thuốc</li>
+                    <li>Rượu, Hoạt động thể chất</li>
+                </ul>
+                <a href="/Prediction/PredictHypertension" class="btn btn-danger mt-3 w-100">
+                    <i class="bi bi-arrow-right"></i> Dự đoán ngay
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Stroke -->
+    <div class="col-lg-6 col-md-12 mb-4">
+        <div class="card h-100 shadow-sm hover-shadow disease-card" style="cursor: pointer; transition: all 0.3s; border-left: 5px solid #6f42c1;">
+            <div class="card-body">
+                <div style="color: #6f42c1; font-size: 3em; margin-bottom: 10px;">
+                    <i class="bi bi-activity"></i>
+                </div>
+                <h5 class="card-title fw-bold">Đột Quỵ</h5>
+                <p class="card-text text-muted">Stroke</p>
+                <p class="small">Dự đoán nguy cơ đột quỵ dựa trên:</p>
+                <ul class="small">
+                    <li>Tuổi, Giới tính</li>
+                    <li>Huyết áp cao, Bệnh tim</li>
+                    <li>Hút thuốc, BMI</li>
+                    <li>Glucose</li>
+                </ul>
+                <a href="/Prediction/PredictStroke" class="btn btn-primary mt-3 w-100">
+                    <i class="bi bi-arrow-right"></i> Dự đoán ngay
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Navigation & Info -->
+<div class="row mt-5">
+    <div class="col-12">
+        <div class="alert alert-info" role="alert">
+            <h5 class="alert-heading">ℹ️ Workflow Sức Khỏe Tích Hợp</h5>
+            <p class="mb-2">
+                <strong>Quy trình sử dụng hệ thống:</strong>
+            </p>
+            <ol class="mb-0 small">
+                <li><strong>Sức Khỏe:</strong> Cập nhật hồ sơ & chỉ số sức khỏe</li>
+                <li><strong>Dự Đoán AI:</strong> Chọn loại bệnh và nhập dữ liệu (sẽ được pre-fill)</li>
+                <li><strong>Lịch Sử:</strong> Theo dõi xu hướng sức khỏe theo thời gian</li>
+            </ol>
+        </div>
+    </div>
+</div>
+                Các dự đoán được thực hiện bằng những mô hình Machine Learning được huấn luyện trên các datasets thực tế 
+                từ các bệnh nhân. Tuy nhiên, <strong>các dự đoán này không thay thế cho ý kiến của bác sĩ chuyên khoa</strong>.
+            </p>
+            <p class="mb-0">
+                Nếu bạn có lo lắng về sức khỏe, vui lòng tham khảo ý kiến của một chuyên gia y tế được thông qua để có 
+                chẩn đoán chính xác và điều trị phù hợp.
+            </p>
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+    </div>
+</div>
+
+<style>
+    .disease-card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 10px 25px rgba(0, 0, 0, 0.15) !important;
+    }
+
+    .hover-shadow {
+        box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075);
+    }
+</style>
