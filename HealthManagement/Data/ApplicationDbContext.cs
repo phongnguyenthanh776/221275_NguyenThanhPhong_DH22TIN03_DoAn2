@@ -27,7 +27,7 @@ namespace HealthManagement.Data
         public DbSet<UongNuoc> UongNuoc { get; set; }
         public DbSet<Thuoc> Thuoc { get; set; }
         public DbSet<LichUongThuoc> LichUongThuoc { get; set; }
-        public DbSet<WaterReminder> WaterReminder { get; set; }
+        public DbSet<NhacUongNuoc> NhacUongNuoc { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
@@ -85,9 +85,9 @@ namespace HealthManagement.Data
                 .OnDelete(DeleteBehavior.Cascade);
 
             // Water reminders (1-n)
-            modelBuilder.Entity<WaterReminder>()
+            modelBuilder.Entity<NhacUongNuoc>()
                 .HasOne(w => w.NguoiDung)
-                .WithMany(nd => nd.WaterReminders)
+                .WithMany(nd => nd.NhacUongNuoc)
                 .HasForeignKey(w => w.MaNguoiDung)
                 .OnDelete(DeleteBehavior.Cascade);
 

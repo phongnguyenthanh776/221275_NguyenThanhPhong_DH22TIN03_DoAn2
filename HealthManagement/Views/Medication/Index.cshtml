@@ -46,33 +46,62 @@
                     // Hiển thị thông báo nhắc uống thuốc khi đến giờ
                     $(document).ready(function () {
                         var now = new Date();
+                        var windowMs = 30 * 1000;
+                        var activeNotifications = new Map();
                         console.log('Current time:', now);
                         $('.thuoc-reminder-row').each(function () {
+                            var id = $(this).data('id');
                             var gioNhac = $(this).data('gionhac');
                             var daUong = $(this).data('dauong');
                             var tenThuoc = $(this).data('tenthuoc');
                             console.log('Thuốc:', tenThuoc, 'Giờ nhắc:', gioNhac, 'Đã uống:', daUong);
                             if (!daUong && gioNhac) {
                                 var remindTime = new Date(gioNhac);
-                                console.log('So sánh remindTime:', remindTime, '<=', now, remindTime <= now);
-                                // Nếu giờ nhắc <= hiện tại thì thông báo
-                                if (remindTime <= now) {
+                                var diffMs = now - remindTime;
+                                console.log('So sánh remindTime:', remindTime, '<=', now, diffMs >= 0 && diffMs <= windowMs);
+                                // Nếu giờ nhắc <= hiện tại và trong cửa sổ 30s thì thông báo
+                                if (diffMs >= 0 && diffMs <= windowMs) {
                                     if (window.Notification && Notification.permission === "granted") {
-                                        new Notification('Đến giờ uống thuốc', {
+                                        var n = new Notification('Đến giờ uống thuốc', {
                                             body: 'Đến giờ uống thuốc: ' + tenThuoc,
                                             icon: '/favicon.ico'
                                         });
+                                        activeNotifications.set(id, n);
+                                        setTimeout(function () {
+                                            var cur = activeNotifications.get(id);
+                                            if (cur) {
+                                                cur.close();
+                                                activeNotifications.delete(id);
+                                            }
+                                        }, windowMs);
                                     } else if (window.Notification && Notification.permission !== "denied") {
                                         Notification.requestPermission().then(function (permission) {
                                             if (permission === "granted") {
-                                                new Notification('Đến giờ uống thuốc', {
+                                                var n = new Notification('Đến giờ uống thuốc', {
                                                     body: 'Đến giờ uống thuốc: ' + tenThuoc,
                                                     icon: '/favicon.ico'
                                                 });
+                                                activeNotifications.set(id, n);
+                                                setTimeout(function () {
+                                                    var cur = activeNotifications.get(id);
+                                                    if (cur) {
+                                                        cur.close();
+                                                        activeNotifications.delete(id);
+                                                    }
+                                                }, windowMs);
                                             }
                                         });
                                     }
                                 }
+                            }
+                        });
+
+                        $('form[data-reminder-toggle="true"]').on('submit', function () {
+                            var id = $(this).data('reminderId');
+                            var n = activeNotifications.get(id);
+                            if (n) {
+                                n.close();
+                                activeNotifications.delete(id);
                             }
                         });
                     });
@@ -99,7 +128,7 @@
                             <tbody>
                             @foreach (var lich in item.LichUongThuoc.OrderBy(l => l.GioNhac))
                             {
-                                <tr class="thuoc-reminder-row" data-gionhac="@lich.GioNhac.ToString("yyyy-MM-ddTHH:mm:ss")" data-dauong="@(lich.DaUong.ToString().ToLower())" data-tenthuoc="@item.Ten">
+                                <tr class="thuoc-reminder-row" data-id="@lich.MaLichUong" data-gionhac="@lich.GioNhac.ToString("yyyy-MM-ddTHH:mm:ss")" data-dauong="@(lich.DaUong.ToString().ToLower())" data-tenthuoc="@item.Ten">
                                     <td>@lich.GioNhac.ToString("dd/MM HH:mm")</td>
                                     <td>
                                         <span class="badge @(lich.DaGuiEmail ? "bg-info" : "bg-secondary")">
@@ -107,7 +136,7 @@
                                         </span>
                                     </td>
                                     <td>
-                                        <form asp-action="ToggleReminder" method="post" class="d-inline">
+                                        <form asp-action="ToggleReminder" method="post" class="d-inline" data-reminder-toggle="true" data-reminder-id="@lich.MaLichUong">
                                             <input type="hidden" name="id" value="@lich.MaLichUong" />
                                             <button type="submit" class="btn btn-sm @(lich.DaUong ? "btn-success" : "btn-outline-secondary")">
                                                 @(lich.DaUong ? "Đã uống" : "Chưa")

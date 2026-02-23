@@ -150,7 +150,7 @@
                                             </span>
                                         </td>
                                         <td>
-                                            <form asp-action="ToggleReminder" method="post" class="d-inline">
+                                            <form asp-action="ToggleReminder" method="post" class="d-inline" data-reminder-id="@r.MaNhac">
                                                 <input type="hidden" name="id" value="@r.MaNhac" />
                                                 <button type="submit" class="btn btn-sm @(r.DaUong ? "btn-success" : "btn-outline-secondary")">
                                                     @(r.DaUong ? "Đã uống" : "Chưa")
@@ -197,16 +197,25 @@
             if (!Array.isArray(reminders) || reminders.length === 0) return;
 
             const notified = new Set();
-            const windowMs = 10 * 60 * 1000; // 10 phút
+            const activeNotifications = new Map();
+            const windowMs = 30 * 1000; // 30 giay
 
             // Nếu hỗ trợ Notification API, xin quyền ngay khi vào trang
             if ("Notification" in window && Notification.permission === "default") {
                 Notification.requestPermission();
             }
 
-            function notify(msg) {
+            function notify(id, msg) {
                 if ("Notification" in window && Notification.permission === "granted") {
-                    new Notification(msg);
+                    const n = new Notification(msg);
+                    activeNotifications.set(id, n);
+                    setTimeout(() => {
+                        const cur = activeNotifications.get(id);
+                        if (cur) {
+                            cur.close();
+                            activeNotifications.delete(id);
+                        }
+                    }, windowMs);
                 } else {
                     alert(msg);
                 }
@@ -221,7 +230,7 @@
                     if (diffMs >= 0 && diffMs <= windowMs) {
                         const ml = r.soMl ? `${r.soMl} ml` : '';
                         const msg = `Đến giờ uống nước ${ml}${r.note ? ' - ' + r.note : ''}`.trim();
-                        notify(msg);
+                        notify(r.id, msg);
                         notified.add(r.id);
                     }
                 });
@@ -229,6 +238,17 @@
 
             checkReminders();
             setInterval(checkReminders, 30 * 1000);
+
+            document.querySelectorAll('form[data-reminder-id]').forEach(form => {
+                form.addEventListener('submit', () => {
+                    const id = form.getAttribute('data-reminder-id');
+                    const n = activeNotifications.get(Number(id));
+                    if (n) {
+                        n.close();
+                        activeNotifications.delete(Number(id));
+                    }
+                });
+            });
         })();
     </script>
 }

@@ -1,24 +1,24 @@
 # Health Management System
 
-## Thong tin du an
+## Thông tin dự án
 
-- Sinh vien: Nguyen Thanh Phong
+- Sinh viên: Nguyễn Thanh Phong
 - MSSV: 221275
-- Lop: DH22TIN03
-- Mon: Do an 2
+- Lớp: DH22TIN03
+- Môn: Đồ án 2
 
-## Muc tieu
+## Mục tiêu
 
-Xay dung he thong quan ly va theo doi suc khoe ca nhan voi cac tinh nang:
-- Ho so suc khoe, chi so suc khoe, BMI
-- Du doan nguy co bang AI cho 4 benh (tim, tieu duong, huyet ap, dot quy)
-- Quan ly loi song: giac ngu, uong nuoc, thuoc
-- Bao cao phan tich, xu huong, canh bao
-- Nhac nho qua email va thong bao tren trinh duyet
-- Quan tri nguoi dung
-- Quen mat khau va dat lai mat khau
+Xây dựng hệ thống quản lý và theo dõi sức khỏe cá nhân với các tính năng:
+- Hồ sơ sức khỏe, chỉ số sức khỏe, BMI
+- Dự đoán nguy cơ bằng AI cho 4 bệnh (tim, tiểu đường, huyết áp, đột quỵ)
+- Quản lý lối sống: giấc ngủ, uống nước, thuốc
+- Báo cáo phân tích, xu hướng, cảnh báo
+- Nhắc nhở qua email và thông báo trên trình duyệt
+- Quản trị người dùng
+- Quên mật khẩu và đặt lại mật khẩu
 
-## Cong nghe
+## Công nghệ
 
 - ASP.NET Core MVC 8
 - Entity Framework Core (Code First)
@@ -27,7 +27,7 @@ Xay dung he thong quan ly va theo doi suc khoe ca nhan voi cac tinh nang:
 - Bootstrap 5, Chart.js
 - Python + Flask (AI API)
 
-## Cau truc co so du lieu (11 bang chinh)
+## Cấu trúc cơ sở dữ liệu (11 bảng chính)
 
 1. VaiTro
 2. NguoiDung
@@ -37,58 +37,58 @@ Xay dung he thong quan ly va theo doi suc khoe ca nhan voi cac tinh nang:
 6. DuDoanAI
 7. GiacNgu
 8. UongNuoc
-9. WaterReminder
+9. NhacUongNuoc
 10. Thuoc
 11. LichUongThuoc
 
-Luu y: Bang Identity tu ASP.NET Identity duoc quan ly rieng.
+Lưu ý: Bảng Identity từ ASP.NET Identity được quản lý riêng.
 
-## Chuc nang chinh
+## Chức năng chính
 
-### Nguoi dung
-- Dang ky, dang nhap, quan ly tai khoan
-- Quen mat khau, dat lai mat khau qua email
-- Dashboard tong quan
-- Ho so suc khoe, nhap chi so, lich su chi so
-- Tinh BMI va lich su BMI
-- Du doan AI 4 benh + lich su du doan
-- Theo doi giac ngu
-- Theo doi uong nuoc va nhac uong nuoc
-- Quan ly thuoc va nhac uong thuoc
-- Bao cao tuan, phan tich xu huong
+### Người dùng
+- Đăng ký, đăng nhập, quản lý tài khoản
+- Quên mật khẩu, đặt lại mật khẩu qua email
+- Dashboard tổng quan
+- Hồ sơ sức khỏe, nhập chỉ số, lịch sử chỉ số
+- Tính BMI và lịch sử BMI
+- Dự đoán AI 4 bệnh + lịch sử dự đoán
+- Theo dõi giấc ngủ
+- Theo dõi uống nước và nhắc uống nước
+- Quản lý thuốc và nhắc uống thuốc
+- Báo cáo tuần, phân tích xu hướng
 
 ### Admin
-- Dashboard quan tri
-- Quan ly nguoi dung (kich hoat/vo hieu hoa)
+- Dashboard quản trị
+- Quản lý người dùng (kích hoạt/vô hiệu hóa)
 
-## Huong dan chay
+## Hướng dẫn chạy
 
-### Yeu cau
+### Yêu cầu
 - .NET SDK 8
 - SQL Server
-- Python 3.9+ (neu chay AI API)
+- Python 3.9+ (nếu chạy AI API)
 
-### Buoc 1: Coi ket noi DB
-- Mo appsettings.json
-- Kiem tra ConnectionStrings:DefaultConnection
+### Bước 1: Coi kết nối DB
+- Mở appsettings.json
+- Kiểm tra ConnectionStrings:DefaultConnection
 
-### Buoc 2: Cap nhat DB
+### Bước 2: Cập nhật DB
 ```
 dotnet ef database update
 ```
 
-### Buoc 3: Chay ung dung
+### Bước 3: Chạy ứng dụng
 ```
 dotnet run --project HealthManagement/HealthManagement.csproj
 ```
 
-### Buoc 4: Chay AI API (tuy chon)
+### Bước 4: Chạy AI API (tùy chọn)
 ```
 cd AIModel
 python flask_api.py
 ```
 
-### Buoc 5: Cau hinh email
+### Bước 5: Cấu hình email
 Trong appsettings.json:
 ```
 "EmailSettings": {
@@ -102,21 +102,21 @@ Trong appsettings.json:
 }
 ```
 
-## AI hien tai
+## AI hiện tại
 
-- Flask API tai http://localhost:5000
-- Cac file model duoc load theo mau:
+- Flask API tại http://localhost:5000
+- Các file model được load theo mẫu:
   - heart_disease_model.pkl
   - diabetes_model.pkl
   - hypertension_model.pkl
   - stroke_model.pkl
-- AIService (C#) goi Flask API qua AISettings:ApiUrl
+- AIService (C#) gọi Flask API qua AISettings:ApiUrl
 
-## Luu y
+## Lưu ý
 
-- He thong la cong cu ho tro, khong thay the chan doan y khoa.
-- Nen kiem tra mail trong ca Spam/Quang cao khi test quen mat khau.
+- Hệ thống là công cụ hỗ trợ, không thay thế chẩn đoán y khoa.
+- Nên kiểm tra mail trong cả Spam/Quảng cáo khi test quên mật khẩu.
 
-## Lien he
+## Liên hệ
 
 - Email: phong221275@student.nctu.edu.vn

@@ -15,7 +15,7 @@ namespace HealthManagement.Services
     {
         private readonly IServiceProvider _serviceProvider;
         private readonly ILogger<ReminderBackgroundService> _logger;
-        private readonly TimeSpan _interval = TimeSpan.FromMinutes(1); // Kiểm tra mỗi phút
+        private readonly TimeSpan _interval = TimeSpan.FromSeconds(5); // Kiem tra nhanh de gui dung gio
 
         public ReminderBackgroundService(IServiceProvider serviceProvider, ILogger<ReminderBackgroundService> logger)
         {
@@ -75,7 +75,7 @@ namespace HealthManagement.Services
                     }
 
                     // Gửi nhắc uống nước
-                    var waterReminders = db.WaterReminder
+                    var waterReminders = db.NhacUongNuoc
                         .Include(n => n.NguoiDung)
                         .Where(n => !n.DaGuiEmail && !n.DaUong && n.GioNhac <= now)
                         .ToList();

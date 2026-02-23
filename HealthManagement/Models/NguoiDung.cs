@@ -55,6 +55,6 @@ namespace HealthManagement.Models
         public virtual ICollection<GiacNgu> GiacNgu { get; set; } = new List<GiacNgu>();
         public virtual ICollection<UongNuoc> UongNuoc { get; set; } = new List<UongNuoc>();
         public virtual ICollection<Thuoc> Thuoc { get; set; } = new List<Thuoc>();
-        public virtual ICollection<WaterReminder> WaterReminders { get; set; } = new List<WaterReminder>();
+        public virtual ICollection<NhacUongNuoc> NhacUongNuoc { get; set; } = new List<NhacUongNuoc>();
     }
 }

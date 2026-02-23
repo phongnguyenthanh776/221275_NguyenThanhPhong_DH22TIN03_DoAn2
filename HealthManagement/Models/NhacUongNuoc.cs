@@ -4,10 +4,10 @@ using System.ComponentModel.DataAnnotations.Schema;
 namespace HealthManagement.Models
 {
     /// <summary>
-    /// Nhắc nhở uống nước theo giờ.
+    /// Nhac nho uong nuoc theo gio.
     /// </summary>
     [Table("NhacUongNuoc")]
-    public class WaterReminder
+    public class NhacUongNuoc
     {
         [Key]
         public int MaNhac { get; set; }
@@ -16,21 +16,21 @@ namespace HealthManagement.Models
         public int MaNguoiDung { get; set; }
 
         [Required]
-        [Display(Name = "Giờ nhắc")]
+        [Display(Name = "Gio nhac")]
         [DataType(DataType.DateTime)]
         public DateTime GioNhac { get; set; }
 
-        [Display(Name = "Số ml")]
+        [Display(Name = "So ml")]
         [Range(50, 5000)]
         public int? SoMl { get; set; }
 
-        [Display(Name = "Đã uống")]
+        [Display(Name = "Da uong")]
         public bool DaUong { get; set; } = false;
 
-        [Display(Name = "Đã gửi mail")]
+        [Display(Name = "Da gui mail")]
         public bool DaGuiEmail { get; set; } = false;
 
-        [Display(Name = "Ghi chú")]
+        [Display(Name = "Ghi chu")]
         [StringLength(200)]
         public string? GhiChu { get; set; }
 

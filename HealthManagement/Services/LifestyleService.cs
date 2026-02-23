@@ -21,8 +21,8 @@ namespace HealthManagement.Services
         Task<bool> UpdateUongNuocAsync(UongNuoc uongNuoc, int maNguoiDung);
         Task<bool> DeleteUongNuocAsync(int id, int maNguoiDung);
 
-        Task<List<WaterReminder>> GetWaterRemindersAsync(int maNguoiDung, int days = 7);
-        Task<WaterReminder> AddWaterReminderAsync(WaterReminder reminder);
+        Task<List<NhacUongNuoc>> GetWaterRemindersAsync(int maNguoiDung, int days = 7);
+        Task<NhacUongNuoc> AddWaterReminderAsync(NhacUongNuoc reminder);
         Task<bool> ToggleWaterReminderAsync(int id, int maNguoiDung);
         Task<bool> DeleteWaterReminderAsync(int id, int maNguoiDung);
     }
@@ -134,25 +134,25 @@ namespace HealthManagement.Services
             return true;
         }
 
-        public async Task<List<WaterReminder>> GetWaterRemindersAsync(int maNguoiDung, int days = 7)
+        public async Task<List<NhacUongNuoc>> GetWaterRemindersAsync(int maNguoiDung, int days = 7)
         {
             var fromDate = DateTime.Now.AddDays(-days);
-            return await _context.WaterReminder
+            return await _context.NhacUongNuoc
                 .Where(r => r.MaNguoiDung == maNguoiDung && r.GioNhac >= fromDate)
                 .OrderBy(r => r.GioNhac)
                 .ToListAsync();
         }
 
-        public async Task<WaterReminder> AddWaterReminderAsync(WaterReminder reminder)
+        public async Task<NhacUongNuoc> AddWaterReminderAsync(NhacUongNuoc reminder)
         {
-            _context.WaterReminder.Add(reminder);
+            _context.NhacUongNuoc.Add(reminder);
             await _context.SaveChangesAsync();
             return reminder;
         }
 
         public async Task<bool> ToggleWaterReminderAsync(int id, int maNguoiDung)
         {
-            var record = await _context.WaterReminder.FirstOrDefaultAsync(r => r.MaNhac == id && r.MaNguoiDung == maNguoiDung);
+            var record = await _context.NhacUongNuoc.FirstOrDefaultAsync(r => r.MaNhac == id && r.MaNguoiDung == maNguoiDung);
             if (record == null) return false;
 
             var wasDone = record.DaUong;
@@ -185,10 +185,10 @@ namespace HealthManagement.Services
 
         public async Task<bool> DeleteWaterReminderAsync(int id, int maNguoiDung)
         {
-            var record = await _context.WaterReminder.FirstOrDefaultAsync(r => r.MaNhac == id && r.MaNguoiDung == maNguoiDung);
+            var record = await _context.NhacUongNuoc.FirstOrDefaultAsync(r => r.MaNhac == id && r.MaNguoiDung == maNguoiDung);
             if (record == null) return false;
 
-            _context.WaterReminder.Remove(record);
+            _context.NhacUongNuoc.Remove(record);
             await _context.SaveChangesAsync();
             return true;
         }

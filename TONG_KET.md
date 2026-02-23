@@ -1,40 +1,40 @@
-# TONG KET DU AN
+# TỔNG KẾT DỰ ÁN
 
-## TOM TAT
+## TÓM TẮT
 
-- Ten du an: Health Management System
-- Muc tieu: Quan ly va theo doi suc khoe ca nhan, du doan nguy co bang AI, nhac nho thong minh
-- Cong nghe: ASP.NET Core MVC 8, EF Core, SQL Server, Flask AI API
+- Tên dự án: Health Management System
+- Mục tiêu: Quản lý và theo dõi sức khỏe cá nhân, dự đoán nguy cơ bằng AI, nhắc nhở thông minh
+- Công nghệ: ASP.NET Core MVC 8, EF Core, SQL Server, Flask AI API
 
-## YEU CAU DA DAT
+## YÊU CẦU ĐÃ ĐẠT
 
-- CRUD day du cho cac module suc khoe
+- CRUD đầy đủ cho các module sức khỏe
 - Authentication + Authorization
-- Dashboard va bao cao
-- AI du doan 4 benh
-- Nhac nho qua email va thong bao tren trinh duyet
-- Giao dien responsive
+- Dashboard và báo cáo
+- AI dự đoán 4 bệnh
+- Nhắc nhở qua email và thông báo trên trình duyệt
+- Giao diện responsive
 
-## DIEM NOI BAT
+## ĐIỂM NỔI BẬT
 
-- Ho so suc khoe va chi so suc khoe lien thong
-- AI du doan nhieu benh qua Flask API
-- Tu dong gui email nhac uong nuoc/thuoc
-- Quen mat khau qua email
-- Phan tich xu huong 30 ngay va bao cao tuan
+- Hồ sơ sức khỏe và chỉ số sức khỏe liên thông
+- AI dự đoán nhiều bệnh qua Flask API
+- Tự động gửi email nhắc uống nước/thuốc
+- Quên mật khẩu qua email
+- Phân tích xu hướng 30 ngày và báo cáo tuần
 
-## CO SO DU LIEU
+## CƠ SỞ DỮ LIỆU
 
-- 11 bang chinh: NguoiDung, VaiTro, HoSoSucKhoe, ChiSoSucKhoe, LichSuBMI, DuDoanAI, GiacNgu, UongNuoc, WaterReminder, Thuoc, LichUongThuoc
-- Identity tables duoc quan ly boi ASP.NET Identity
+- 11 bảng chính: NguoiDung, VaiTro, HoSoSucKhoe, ChiSoSucKhoe, LichSuBMI, DuDoanAI, GiacNgu, UongNuoc, NhacUongNuoc, Thuoc, LichUongThuoc
+- Identity tables được quản lý bởi ASP.NET Identity
 
-## LUU Y
+## LƯU Ý
 
-- AI la cong cu ho tro, khong thay the chan doan y khoa.
-- Email SMTP can App Password de gui email.
+- AI là công cụ hỗ trợ, không thay thế chẩn đoán y khoa.
+- Email SMTP cần App Password để gửi email.
 
-## HUONG PHAT TRIEN
+## HƯỚNG PHÁT TRIỂN
 
-- Mo rong them benh va du lieu huong dan
-- Tich hop thong ke nang cao
-- Tu dong nhac nho theo thoi quen
+- Mở rộng thêm bệnh và dữ liệu hướng dẫn
+- Tích hợp thống kê nâng cao
+- Tự động nhắc nhở theo thói quen

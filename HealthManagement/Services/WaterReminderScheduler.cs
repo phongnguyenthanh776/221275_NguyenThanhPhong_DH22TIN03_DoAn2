@@ -27,17 +27,20 @@ namespace HealthManagement.Services
         private async Task CheckAndSendReminders()
         {
             var now = DateTime.Now;
-            var reminders = _context.WaterReminder
-                .Where(r => !r.DaUong && r.GioNhac.Year == now.Year && r.GioNhac.Month == now.Month && r.GioNhac.Day == now.Day && r.GioNhac.Hour == now.Hour && r.GioNhac.Minute == now.Minute)
+            var reminders = _context.NhacUongNuoc
+                .Where(r => !r.DaGuiEmail && !r.DaUong && r.GioNhac <= now)
                 .Join(_context.NguoiDung, r => r.MaNguoiDung, nd => nd.MaNguoiDung, (r, nd) => new { r, nd })
                 .ToList();
 
             foreach (var item in reminders)
             {
-                var subject = $"Nhắc uống nước";
-                var body = $"Đến giờ uống nước: {item.r.SoMl ?? 0} ml lúc {item.r.GioNhac:HH:mm}.";
+                var subject = "Nhac uong nuoc";
+                var body = $"Den gio uong nuoc: {item.r.SoMl ?? 0} ml luc {item.r.GioNhac:HH:mm}.";
                 await _emailService.SendEmailAsync(item.nd.Email, subject, body);
+                item.r.DaGuiEmail = true;
             }
+
+            await _context.SaveChangesAsync();
         }
     }
 }

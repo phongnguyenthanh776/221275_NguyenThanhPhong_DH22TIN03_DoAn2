@@ -45,7 +45,7 @@ namespace HealthManagement.Controllers
                 Logs = logs,
                 TotalsByDate = totals,
                 Reminders = reminders,
-                ReminderForm = new WaterReminder { GioNhac = DateTime.Now.AddMinutes(30), SoMl = 250 }
+                ReminderForm = new NhacUongNuoc { GioNhac = DateTime.Now.AddMinutes(30), SoMl = 250 }
             };
 
             return View(vm);
@@ -186,8 +186,8 @@ namespace HealthManagement.Controllers
         public UongNuoc Form { get; set; } = new UongNuoc();
         public List<UongNuoc> Logs { get; set; } = new List<UongNuoc>();
         public Dictionary<DateTime, int> TotalsByDate { get; set; } = new Dictionary<DateTime, int>();
-        public List<WaterReminder> Reminders { get; set; } = new List<WaterReminder>();
-        public WaterReminder? ReminderForm { get; set; }
+        public List<NhacUongNuoc> Reminders { get; set; } = new List<NhacUongNuoc>();
+        public NhacUongNuoc? ReminderForm { get; set; }
     }
 
     public class HydrationEditViewModel

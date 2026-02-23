@@ -1,38 +1,38 @@
-# DANH SACH CHUC NANG
+# DANH SÁCH CHỨC NĂNG
 
 ## USER
 
-1. Dang ky tai khoan (/Account/Register)
-2. Dang nhap (/Account/Login)
-3. Quen mat khau (/Account/ForgotPassword)
-4. Dat lai mat khau (/Account/ResetPassword)
-5. Quan ly tai khoan (/Account/Manage)
-6. Dashboard tong quan (/Home/Dashboard)
-7. Ho so suc khoe (/Health/Profile)
-8. Nhap chi so suc khoe (/Health/AddMetric)
-9. Lich su chi so (/Health/MetricHistory)
-10. Tinh BMI (/Health/CalculateBMI)
-11. Lich su BMI (/Health/BMIHistory)
-12. Chon benh du doan (/Prediction/SelectDisease)
-13. Du doan benh tim (/Prediction/PredictHeartDisease)
-14. Du doan tieu duong (/Prediction/PredictDiabetes)
-15. Du doan huyet ap (/Prediction/PredictHypertension)
-16. Du doan dot quy (/Prediction/PredictStroke)
-17. Lich su du doan (/Prediction/History)
-18. Chi tiet du doan (/Prediction/Details/{id})
-19. Theo doi giac ngu (/Sleep/Index)
-20. Theo doi uong nuoc (/Hydration/Index)
-21. Quan ly thuoc (/Medication/Index)
-22. Bao cao xu huong (/Analytics/Dashboard)
-23. Bao cao tuan (/Analytics/WeeklyReport)
+1. Đăng ký tài khoản (/Account/Register)
+2. Đăng nhập (/Account/Login)
+3. Quên mật khẩu (/Account/ForgotPassword)
+4. Đặt lại mật khẩu (/Account/ResetPassword)
+5. Quản lý tài khoản (/Account/Manage)
+6. Dashboard tổng quan (/Home/Dashboard)
+7. Hồ sơ sức khỏe (/Health/Profile)
+8. Nhập chỉ số sức khỏe (/Health/AddMetric)
+9. Lịch sử chỉ số (/Health/MetricHistory)
+10. Tính BMI (/Health/CalculateBMI)
+11. Lịch sử BMI (/Health/BMIHistory)
+12. Chọn bệnh dự đoán (/Prediction/SelectDisease)
+13. Dự đoán bệnh tim (/Prediction/PredictHeartDisease)
+14. Dự đoán tiểu đường (/Prediction/PredictDiabetes)
+15. Dự đoán huyết áp (/Prediction/PredictHypertension)
+16. Dự đoán đột quỵ (/Prediction/PredictStroke)
+17. Lịch sử dự đoán (/Prediction/History)
+18. Chi tiết dự đoán (/Prediction/Details/{id})
+19. Theo dõi giấc ngủ (/Sleep/Index)
+20. Theo dõi uống nước (/Hydration/Index)
+21. Quản lý thuốc (/Medication/Index)
+22. Báo cáo xu hướng (/Analytics/Dashboard)
+23. Báo cáo tuần (/Analytics/WeeklyReport)
 
 ## ADMIN
 
 24. Admin dashboard (/Admin/Index)
-25. Quan ly nguoi dung (/Admin/Users)
+25. Quản lý người dùng (/Admin/Users)
 
-## GHI CHU
+## GHI CHÚ
 
-- Nhac uong nuoc/thuoc co 2 trang thai: da gui email va da uong.
-- AI du doan qua Flask API, ho tro 4 benh.
-- Email SMTP ho tro quen mat khau va nhac nho.
+- Nhắc uống nước/thuốc có 2 trạng thái: đã gửi email và đã uống.
+- AI dự đoán qua Flask API, hỗ trợ 4 bệnh.
+- Email SMTP hỗ trợ quên mật khẩu và nhắc nhở.
