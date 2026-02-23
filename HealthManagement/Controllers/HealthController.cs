@@ -28,26 +28,12 @@ namespace HealthManagement.Controllers
         }
 
         /// <summary>
-        /// Trang chính Sức Khỏe - Hiển thị tất cả thông tin
-        /// Tích hợp: Profile → Metrics → BMI → Prediction AI
+        /// Redirect /Health to /Health/Profile
         /// </summary>
         [HttpGet]
-        public async Task<IActionResult> Index()
+        public IActionResult Index()
         {
-            var nguoiDung = await GetCurrentUserAsync();
-            if (nguoiDung == null) return RedirectToAction("Login", "Account");
-
-            var hoSo = await _healthService.GetHealthProfileAsync(nguoiDung.MaNguoiDung);
-            var latestMetric = await _healthService.GetLatestHealthMetricAsync(nguoiDung.MaNguoiDung);
-            var bmiHistory = await _healthService.GetBMIHistoryAsync(nguoiDung.MaNguoiDung, 5);
-            var predictionHistory = await _userService.GetPredictionHistoryAsync(nguoiDung.MaNguoiDung, 3);
-
-            ViewBag.HealthProfile = hoSo;
-            ViewBag.LatestMetric = latestMetric;
-            ViewBag.BMIHistory = bmiHistory;
-            ViewBag.PredictionHistory = predictionHistory;
-
-            return View();
+            return RedirectToAction(nameof(Profile));
         }
 
         /// <summary>

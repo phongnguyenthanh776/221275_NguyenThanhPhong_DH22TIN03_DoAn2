@@ -1,3 +1,5 @@
+@model IEnumerable<HealthManagement.Models.TinTucSucKhoe>
+
 @{
     ViewData["Title"] = "Trang chủ";
 }
@@ -55,6 +57,48 @@
         </div>
     </div>
 </div>
+
+<!-- Health News & Articles -->
+<div class="row mb-5">
+    <div class="col-12 mb-4">
+        <h2 class="text-center"><i class="bi bi-newspaper"></i> Tin tức & Bài viết Sức khỏe</h2>
+        <p class="text-center text-muted">Cập nhật kiến thức y tế và lối sống lành mạnh</p>
+    </div>
+</div>
+
+@if (Model != null && Model.Any())
+{
+    <div class="row mb-5">
+        @foreach (var tinTuc in Model)
+        {
+            <div class="col-md-4 mb-4">
+                <div class="card h-100 shadow-sm">
+                    <img src="@tinTuc.HinhAnhUrl" class="card-img-top" alt="@tinTuc.TieuDe" style="height: 250px; object-fit: cover;">
+                    <div class="card-body">
+                        <span class="badge bg-@tinTuc.MauDanhMuc mb-2">@tinTuc.DanhMuc</span>
+                        <h5 class="card-title">@tinTuc.TieuDe</h5>
+                        <p class="card-text">@tinTuc.MoTa</p>
+                        @if (!string.IsNullOrEmpty(tinTuc.LinkBaiViet) && tinTuc.LinkBaiViet != "#")
+                        {
+                            <a href="@tinTuc.LinkBaiViet" target="_blank" class="btn btn-sm btn-outline-@tinTuc.MauDanhMuc">
+                                Đọc thêm <i class="bi bi-arrow-right"></i>
+                            </a>
+                        }
+                    </div>
+                </div>
+            </div>
+        }
+    </div>
+}
+else
+{
+    <div class="row mb-5">
+        <div class="col-12 text-center py-5">
+            <i class="bi bi-inbox display-1 text-muted"></i>
+            <p class="mt-3 text-muted">Chưa có tin tức nào được đăng</p>
+        </div>
+    </div>
+}
 
 <!-- Call to Action -->
 @if (User.Identity?.IsAuthenticated != true)

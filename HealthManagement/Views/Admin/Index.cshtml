@@ -1,6 +1,7 @@
 @{
     ViewData["Title"] = "Admin Dashboard";
     var totalUsers = ViewBag.TotalUsers ?? 0;
+    var totalNews = ViewBag.TotalNews ?? 0;
 }
 
 <div class="row mb-4">
@@ -30,6 +31,25 @@
             </div>
         </div>
     </div>
+    
+    <div class="col-md-6 col-lg-4 mb-3">
+        <div class="card text-white" style="background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);">
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <h6>Tin tức</h6>
+                        <h2 class="mb-0">@totalNews</h2>
+                    </div>
+                    <i class="bi bi-newspaper display-4"></i>
+                </div>
+            </div>
+            <div class="card-footer bg-transparent border-0">
+                <a asp-action="TinTuc" class="text-white text-decoration-none">
+                    Quản lý <i class="bi bi-arrow-right"></i>
+                </a>
+            </div>
+        </div>
+    </div>
 </div>
 
 <!-- Quick Actions -->
@@ -46,6 +66,14 @@
                             <div class="p-4 border rounded text-center hover-shadow">
                                 <i class="bi bi-people display-4 text-warning"></i>
                                 <p class="mt-2 mb-0">Quản lý người dùng</p>
+                            </div>
+                        </a>
+                    </div>
+                    <div class="col-md-6 col-lg-4 mb-3">
+                        <a asp-action="TinTuc" class="text-decoration-none">
+                            <div class="p-4 border rounded text-center hover-shadow">
+                                <i class="bi bi-newspaper display-4 text-primary"></i>
+                                <p class="mt-2 mb-0">Quản lý Tin tức</p>
                             </div>
                         </a>
                     </div>

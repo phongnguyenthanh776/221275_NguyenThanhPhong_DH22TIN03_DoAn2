@@ -27,7 +27,7 @@ Xây dựng hệ thống quản lý và theo dõi sức khỏe cá nhân với c
 - Bootstrap 5, Chart.js
 - Python + Flask (AI API)
 
-## Cấu trúc cơ sở dữ liệu (11 bảng chính)
+## Cấu trúc cơ sở dữ liệu (12 bảng chính)
 
 1. VaiTro
 2. NguoiDung
@@ -40,8 +40,9 @@ Xây dựng hệ thống quản lý và theo dõi sức khỏe cá nhân với c
 9. NhacUongNuoc
 10. Thuoc
 11. LichUongThuoc
+12. TinTucSucKhoe
 
-Lưu ý: Bảng Identity từ ASP.NET Identity được quản lý riêng.
+Lưu ý: Bảng Identity từ ASP.NET Identity được quản lý riêng. Bảng TinTucSucKhoe chứa tin tức sức khỏe được Admin quản lý hiển thị trên trang chủ.
 
 ## Chức năng chính
 
@@ -60,6 +61,7 @@ Lưu ý: Bảng Identity từ ASP.NET Identity được quản lý riêng.
 ### Admin
 - Dashboard quản trị
 - Quản lý người dùng (kích hoạt/vô hiệu hóa)
+- Quản lý tin tức sức khỏe (tạo, sửa, xóa, hiển thị/ẩn)
 
 ## Hướng dẫn chạy
 

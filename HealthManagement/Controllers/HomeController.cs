@@ -1,9 +1,11 @@
 using HealthManagement.Models;
 using HealthManagement.Services;
 using HealthManagement.ViewModels;
+using HealthManagement.Data;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 
 namespace HealthManagement.Controllers
 {
@@ -16,25 +18,36 @@ namespace HealthManagement.Controllers
         private readonly IHealthService _healthService;
         private readonly ILifestyleService _lifestyleService;
         private readonly UserManager<IdentityUser> _userManager;
+        private readonly ApplicationDbContext _context;
 
         public HomeController(
             IUserService userService,
             IHealthService healthService,
             ILifestyleService lifestyleService,
-            UserManager<IdentityUser> userManager)
+            UserManager<IdentityUser> userManager,
+            ApplicationDbContext context)
         {
             _userService = userService;
             _healthService = healthService;
             _lifestyleService = lifestyleService;
             _userManager = userManager;
+            _context = context;
         }
 
         /// <summary>
         /// Trang chủ - Hiển thị bài viết mới nhất
         /// </summary>
-        public IActionResult Index()
+        public async Task<IActionResult> Index()
         {
-            return View();
+            // Lấy tối đa 6 tin tức được hiển thị, sắp xếp theo thứ tự và ngày tạo
+            var tinTuc = await _context.TinTucSucKhoe
+                .Where(t => t.HienThi)
+                .OrderBy(t => t.ThuTu)
+                .ThenByDescending(t => t.NgayTao)
+                .Take(6)
+                .ToListAsync();
+            
+            return View(tinTuc);
         }
 
         /// <summary>

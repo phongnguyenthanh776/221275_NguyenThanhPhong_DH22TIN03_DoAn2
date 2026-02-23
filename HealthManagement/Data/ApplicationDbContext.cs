@@ -28,6 +28,7 @@ namespace HealthManagement.Data
         public DbSet<Thuoc> Thuoc { get; set; }
         public DbSet<LichUongThuoc> LichUongThuoc { get; set; }
         public DbSet<NhacUongNuoc> NhacUongNuoc { get; set; }
+        public DbSet<TinTucSucKhoe> TinTucSucKhoe { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {

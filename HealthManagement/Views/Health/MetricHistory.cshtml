@@ -9,7 +9,6 @@
     <nav aria-label="breadcrumb">
         <ol class="breadcrumb">
             <li class="breadcrumb-item"><a href="/">Trang Chủ</a></li>
-            <li class="breadcrumb-item"><a href="@Url.Action("Index", "Health")">Sức Khỏe</a></li>
             <li class="breadcrumb-item active">Lịch Sử Chỉ Số</li>
         </ol>
     </nav>
@@ -133,8 +132,8 @@
                 <a href="@Url.Action("AddMetric", "Health")" class="btn btn-primary">
                     <i class="fas fa-plus-circle"></i> Nhập Chỉ Số Mới
                 </a>
-                <a href="@Url.Action("Index", "Health")" class="btn btn-outline-secondary">
-                    <i class="fas fa-arrow-left"></i> Quay Lại
+                <a href="/Home/Dashboard" class="btn btn-outline-secondary">
+                    <i class="fas fa-arrow-left"></i> Về Dashboard
                 </a>
             </div>
         </div>
