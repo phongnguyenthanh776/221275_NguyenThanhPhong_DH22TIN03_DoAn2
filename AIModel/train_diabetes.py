@@ -1,159 +1,116 @@
-"""
-TRAIN DIABETES PREDICTION MODEL
-Dataset: Diabetes Classification từ Kaggle
-Features: Pregnancies, Glucose, BloodPressure, SkinThickness, Insulin, BMI, DiabetesPedigreeFunction, Age
-"""
+"""Train diabetes model with reusable imbalance-aware pipeline."""
+
+from pathlib import Path
+import warnings
 
 import pandas as pd
-import numpy as np
-from sklearn.model_selection import train_test_split, cross_val_score
-from sklearn.preprocessing import StandardScaler
-from sklearn.ensemble import RandomForestClassifier, GradientBoostingClassifier
+from sklearn.ensemble import GradientBoostingClassifier, RandomForestClassifier
 from sklearn.linear_model import LogisticRegression
-from sklearn.metrics import accuracy_score, classification_report, roc_auc_score
-import joblib
-import warnings
-warnings.filterwarnings('ignore')
 
-print("="*70)
-print("🚀 DIABETES PREDICTION MODEL TRAINING")
-print("="*70)
+from training_pipeline import train_binary_pipeline
 
-# ============================================================
-# BƯỚC 1: LOAD DỮ LIỆU
-# ============================================================
-print("\n📂 BƯỚC 1: Loading dataset...")
+warnings.filterwarnings("ignore")
 
-try:
-    # Thử đọc từ nhiều tên file có thể có
-    try:
-        df = pd.read_csv('data/diabetes.csv')
-    except:
-        try:
-            df = pd.read_csv('data/pima-indians-diabetes.csv')
-        except:
-            # Nếu không có file, tạo dataset mẫu
-            print("⚠️ Không tìm thấy file diabetes.csv, tạo dataset demo...")
-            np.random.seed(42)
-            n_samples = 768
-            df = pd.DataFrame({
-                'Pregnancies': np.random.randint(0, 15, n_samples),
-                'Glucose': np.random.randint(44, 200, n_samples),
-                'BloodPressure': np.random.randint(24, 122, n_samples),
-                'SkinThickness': np.random.randint(0, 100, n_samples),
-                'Insulin': np.random.randint(0, 846, n_samples),
-                'BMI': np.random.uniform(18, 70, n_samples),
-                'DiabetesPedigreeFunction': np.random.uniform(0, 2.5, n_samples),
-                'Age': np.random.randint(21, 81, n_samples),
-                'Outcome': np.random.randint(0, 2, n_samples)
-            })
-    
-    print(f"✅ Dataset loaded successfully!")
-    print(f"   Rows: {df.shape[0]}, Columns: {df.shape[1]}")
-    print(f"\n📋 Columns: {list(df.columns)}")
-    
-except Exception as e:
-    print(f"❌ Error loading dataset: {e}")
-    print("\n📝 Guide:")
-    print("   Download from: https://www.kaggle.com/datasets/uciml/pima-indians-diabetes-database")
-    exit()
+print("=" * 70)
+print("🚀 DIABETES MODEL TRAINING")
+print("=" * 70)
 
-# ============================================================
-# BƯỚC 2: KIỂM TRA DỮ LIỆU
-# ============================================================
-print("\n📊 BƯỚC 2: Data Exploration...")
-print(f"Missing values:\n{df.isnull().sum()}")
-print(f"\nData types:\n{df.dtypes}")
-print(f"\nTarget distribution:\n{df['Outcome'].value_counts()}")
+base_dir = Path(__file__).resolve().parent
+data_path = base_dir / "data" / "diabetes.csv"
+if not data_path.exists():
+    raise FileNotFoundError(f"Không tìm thấy dataset: {data_path}")
 
-# ============================================================
-# BƯỚC 3: CHUẨN BỊ DỮ LIỆU
-# ============================================================
-print("\n🔧 BƯỚC 3: Data Preparation...")
+print(f"\n📂 Loading dataset: {data_path}")
+df = pd.read_csv(data_path)
+print(f"✅ Rows: {len(df)}, Columns: {len(df.columns)}")
 
-# Xác định features và target
-X = df.drop('Outcome', axis=1)
-y = df['Outcome']
+required_columns = [
+    "Pregnancies",
+    "Glucose",
+    "BloodPressure",
+    "SkinThickness",
+    "Insulin",
+    "BMI",
+    "DiabetesPedigreeFunction",
+    "Age",
+    "Outcome",
+]
+missing_columns = [col for col in required_columns if col not in df.columns]
+if missing_columns:
+    raise ValueError(f"Thiếu cột bắt buộc: {missing_columns}")
 
-# Lưu feature names
-feature_names = list(X.columns)
-print(f"Features: {feature_names}")
+X = df.drop(columns=["Outcome"]).copy()
+y = df["Outcome"].astype(int)
 
-# Chia train/test
-X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42, stratify=y)
-
-# Chuẩn hóa dữ liệu
-scaler = StandardScaler()
-X_train_scaled = scaler.fit_transform(X_train)
-X_test_scaled = scaler.transform(X_test)
-
-print(f"✅ Training set: {X_train_scaled.shape}")
-print(f"✅ Test set: {X_test_scaled.shape}")
-
-# ============================================================
-# BƯỚC 4: TRAINING MODELS
-# ============================================================
-print("\n🤖 BƯỚC 4: Training models...")
+for col in ["Glucose", "BloodPressure", "SkinThickness", "Insulin", "BMI"]:
+    median_val = X.loc[X[col] > 0, col].median()
+    X.loc[X[col] == 0, col] = median_val
 
 models = {
-    'Logistic Regression': LogisticRegression(max_iter=1000, random_state=42),
-    'Random Forest': RandomForestClassifier(n_estimators=100, random_state=42),
-    'Gradient Boosting': GradientBoostingClassifier(n_estimators=100, random_state=42)
+    "LogisticRegression": LogisticRegression(max_iter=3000, random_state=42, class_weight="balanced"),
+    "RandomForest": RandomForestClassifier(
+        n_estimators=500,
+        min_samples_leaf=2,
+        random_state=42,
+        class_weight="balanced",
+        n_jobs=-1,
+    ),
+    "GradientBoosting": GradientBoostingClassifier(random_state=42),
 }
 
-results = {}
+try:
+    from xgboost import XGBClassifier
 
-for name, model in models.items():
-    print(f"\n  Training {name}...")
-    model.fit(X_train_scaled, y_train)
-    
-    y_pred = model.predict(X_test_scaled)
-    accuracy = accuracy_score(y_test, y_pred)
-    y_pred_proba = model.predict_proba(X_test_scaled)[:, 1]
-    roc_auc = roc_auc_score(y_test, y_pred_proba)
-    
-    results[name] = {'accuracy': accuracy, 'roc_auc': roc_auc, 'model': model}
-    
-    print(f"  - Accuracy: {accuracy:.4f}")
-    print(f"  - ROC AUC: {roc_auc:.4f}")
-
-# ============================================================
-# BƯỚC 5: CHỌN MODEL TỐT NHẤT
-# ============================================================
-print("\n🏆 BƯỚC 5: Model Selection...")
-best_model_name = max(results, key=lambda x: results[x]['accuracy'])
-best_model = results[best_model_name]['model']
-best_accuracy = results[best_model_name]['accuracy']
-
-print(f"\n✅ Best Model: {best_model_name}")
-print(f"✅ Accuracy: {best_accuracy:.4f}")
-
-# ============================================================
-# BƯỚC 6: LƯỚI MODELS
-# ============================================================
-print("\n💾 BƯỚC 6: Saving models...")
+    models["XGBoost"] = XGBClassifier(
+        n_estimators=300,
+        learning_rate=0.05,
+        max_depth=4,
+        subsample=0.9,
+        colsample_bytree=0.9,
+        reg_lambda=1.0,
+        objective="binary:logistic",
+        eval_metric="logloss",
+        random_state=42,
+        n_jobs=-1,
+        tree_method="hist",
+    )
+    print("✅ XGBoost available: included in model comparison")
+except Exception:
+    print("⚠️ XGBoost not available: skipped")
 
 try:
-    joblib.dump(best_model, 'diabetes_model.pkl')
-    joblib.dump(scaler, 'diabetes_scaler.pkl')
-    joblib.dump(feature_names, 'diabetes_features.pkl')
-    print("✅ Models saved successfully!")
-    print("   - diabetes_model.pkl")
-    print("   - diabetes_scaler.pkl")
-    print("   - diabetes_features.pkl")
-except Exception as e:
-    print(f"❌ Error saving models: {e}")
+    from lightgbm import LGBMClassifier
 
-# ============================================================
-# BƯỚC 7: DETAILED REPORT
-# ============================================================
-print("\n📈 BƯỚC 7: Detailed Report...")
-print(f"\nBest Model: {best_model_name}")
-print(f"Accuracy: {best_accuracy:.4f}")
+    models["LightGBM"] = LGBMClassifier(
+        n_estimators=400,
+        learning_rate=0.05,
+        num_leaves=31,
+        subsample=0.9,
+        colsample_bytree=0.9,
+        random_state=42,
+    )
+    print("✅ LightGBM available: included in model comparison")
+except Exception:
+    print("⚠️ LightGBM not available: skipped")
 
-y_pred = best_model.predict(X_test_scaled)
-print(f"\n{classification_report(y_test, y_pred, target_names=['No Diabetes', 'Diabetes'])}")
+train_binary_pipeline(
+    X=X,
+    y=y,
+    models=models,
+    disease_name="diabetes",
+    target_names=["No Diabetes", "Diabetes"],
+    model_path=base_dir / "diabetes_model.pkl",
+    scaler_path=base_dir / "diabetes_scaler.pkl",
+    features_path=base_dir / "diabetes_features.pkl",
+    threshold_meta_path=base_dir / "diabetes_threshold_meta.pkl",
+    imbalance_ratio_threshold=0.9,
+    calibrate_probabilities=True,
+    calibration_method='sigmoid',
+    calibration_size=0.2,
+    threshold_metric='f1',
+    min_recall_for_threshold=0.60,
+)
 
-print("\n" + "="*70)
-print("✅ TRAINING COMPLETED!")
-print("="*70)
+print("=" * 70)
+print("✅ DONE")
+print("=" * 70)

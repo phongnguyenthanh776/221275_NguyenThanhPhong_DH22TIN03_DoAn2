@@ -1,42 +1,54 @@
 # DATASETS CHO AI MODEL
 
-## Tong quan
+## Tổng quan
 
-Hien tai he thong su dung 4 bo du lieu tuong ung 4 benh:
-- heart.csv (Benh tim)
-- diabetes.csv (Tieu duong)
-- cardio_train.csv (Huyet ap)
-- stroke.csv (Dot quy)
+Hệ thống sử dụng **6 bộ dữ liệu** cho 6 bệnh được dự đoán, chia thành hai nhóm:
 
-Cac file nay dang nam trong thu muc AIModel/data.
+**Nhóm tabular (file CSV)** — nằm trong `AIModel/data/`:
+- `heart.csv` — Bệnh tim mạch
+- `diabetes.csv` — Tiểu đường
+- `cardio_train.csv` — Huyết áp cao / tim mạch
+- `stroke.csv` — Đột quỵ
 
-## De xuat dataset
+**Nhóm ảnh** — nằm trong `AIModel/data/`:
+- `chest_xray/` — Viêm phổi (NORMAL / PNEUMONIA)
+- `CT-KIDNEY-DATASET-Normal-Cyst-Tumor-Stone/` — Sỏi thận (Normal / Stone)
 
-### Benh tim
-- Kaggle: https://www.kaggle.com/datasets/johnsmith88/heart-disease-dataset
-- File de xuat: heart.csv
-- Features hay gap: age, sex, cp, trestbps, chol, fbs, thalach, exang
+## Chi tiết từng dataset
 
-### Tieu duong
-- Kaggle: https://www.kaggle.com/datasets/uciml/pima-indians-diabetes-database
-- File de xuat: diabetes.csv
-- Features: Pregnancies, Glucose, BloodPressure, SkinThickness, Insulin, BMI, DiabetesPedigreeFunction, Age
+### Bệnh tim
+- Nguồn: Kaggle — Heart Disease Dataset
+- File: `heart.csv`
+- Đặc trưng chính: age, sex, cp, trestbps, chol, fbs, thalach, exang
 
-### Huyet ap
-- Kaggle: https://www.kaggle.com/datasets/sulianova/cardiovascular-disease-dataset
-- File de xuat: cardio_train.csv
-- Features chinh: age, gender, ap_hi, ap_lo, cholesterol, gluc, smoke, alco, active
+### Tiểu đường
+- Nguồn: Kaggle — Pima Indians Diabetes Database
+- File: `diabetes.csv`
+- Đặc trưng chính: Pregnancies, Glucose, BloodPressure, SkinThickness, Insulin, BMI, DiabetesPedigreeFunction, Age
 
-### Dot quy
-- Kaggle: https://www.kaggle.com/datasets/fedesoriano/stroke-prediction-dataset
-- File de xuat: stroke.csv
-- Features chinh: age, gender, hypertension, heart_disease, avg_glucose_level, bmi, smoking_status
+### Huyết áp cao
+- Nguồn: Kaggle — Cardiovascular Disease Dataset
+- File: `cardio_train.csv`
+- Đặc trưng chính: age, gender, ap_hi, ap_lo, cholesterol, gluc, smoke, alco, active
 
-## Luu y
+### Đột quỵ
+- Nguồn: Kaggle — Stroke Prediction Dataset
+- File: `stroke.csv`
+- Đặc trưng chính: age, gender, hypertension, heart_disease, avg_glucose_level, bmi, smoking_status
+- Lưu ý: Tỷ lệ mất cân bằng nghiêm trọng (~5% ca đột quỵ), script train dùng chiến lược đặc biệt với cross-validation và threshold hạ thấp.
 
-- Script train se tu dong mapping/normalize ten cot trong qua trinh train.
-- Flask API se doc cac file model theo mau:
-  - heart_disease_model.pkl
-  - diabetes_model.pkl
-  - hypertension_model.pkl
-  - stroke_model.pkl
+### Sỏi thận (ảnh CNN)
+- Nguồn: Kaggle — CT KIDNEY DATASET: Normal-Cyst-Tumor-Stone
+- Thư mục: `CT-KIDNEY-DATASET-Normal-Cyst-Tumor-Stone/CT-KIDNEY-DATASET-Normal-Cyst-Tumor-Stone/`
+- Lớp được dùng: `Normal` (không sỏi) và `Stone` (có sỏi) — tổng **6.454 ảnh**
+- Lớp Cyst và Tumor không được đưa vào vì thuộc bài toán khác nhãn.
+
+### Viêm phổi (ảnh CNN)
+- Nguồn: Kaggle — Chest X-Ray Images (Pneumonia)
+- Thư mục: `chest_xray/` — có sẵn split `train/`, `val/`, `test/`
+- Lớp: `NORMAL` và `PNEUMONIA`
+- Script train gom **toàn bộ ảnh** từ tất cả split (train 5.216 + val 16 + test 624 = **5.856 ảnh**) rồi tách lại nội bộ theo tỷ lệ 85/15.
+
+## Lưu ý
+
+Script train tự động mapping và chuẩn hóa tên cột trong quá trình huấn luyện. Flask API đọc các file model theo mẫu đặt tên: `heart_disease_model.pkl`, `diabetes_model.pkl`, `hypertension_model.pkl`, `stroke_model.pkl`, `kidney_stone_image_model.pt`, `pneumonia_image_model.pt`.

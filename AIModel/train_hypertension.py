@@ -1,145 +1,117 @@
-"""
-TRAIN HYPERTENSION (HIGH BLOOD PRESSURE) PREDICTION MODEL
-Features: Age, Gender, BMI, Cholesterol, SystolicBP, DiastolicBP, Heart Rate, Smoking, Alcohol, Physical Activity
-"""
+"""Train hypertension/cardio model with reusable imbalance-aware pipeline."""
+
+from pathlib import Path
+import warnings
 
 import pandas as pd
-import numpy as np
-from sklearn.model_selection import train_test_split, cross_val_score
-from sklearn.preprocessing import StandardScaler, LabelEncoder
-from sklearn.ensemble import RandomForestClassifier, GradientBoostingClassifier
+from sklearn.ensemble import GradientBoostingClassifier, RandomForestClassifier
 from sklearn.linear_model import LogisticRegression
-from sklearn.metrics import accuracy_score, classification_report, roc_auc_score
-import joblib
-import warnings
-warnings.filterwarnings('ignore')
 
-print("="*70)
-print("🚀 HYPERTENSION PREDICTION MODEL TRAINING")
-print("="*70)
+from training_pipeline import train_binary_pipeline
 
-# ============================================================
-# BƯỚC 1: LOAD DỮ LIỆU
-# ============================================================
-print("\n📂 BƯỚC 1: Loading dataset...")
+warnings.filterwarnings("ignore")
 
-try:
-    # Load cardiovascular dataset (70,000 samples)
-    try:
-        df = pd.read_csv('data/cardio_train.csv', sep=';')
-    except:
-        # Fallback
-        try:
-            df = pd.read_csv('data/hypertension.csv')
-        except:
-            print("⚠️ Không tìm thấy datasets, tạo dataset demo...")
-            np.random.seed(42)
-            n_samples = 1000
-            df = pd.DataFrame({
-                'age': np.random.randint(20, 80, n_samples),
-                'gender': np.random.choice([0, 1], n_samples),
-                'ap_hi': np.random.randint(90, 180, n_samples),
-                'ap_lo': np.random.randint(60, 120, n_samples),
-                'cholesterol': np.random.randint(120, 300, n_samples),
-                'cardio': np.random.randint(0, 2, n_samples)
-            })
-    
-    print(f"✅ Dataset loaded successfully!")
-    print(f"   Rows: {df.shape[0]}, Columns: {df.shape[1]}")
-    print(f"   Columns: {list(df.columns)}")
-    
-except Exception as e:
-    print(f"❌ Error: {e}")
-    exit()
+print("=" * 70)
+print("🚀 HYPERTENSION/CARDIO MODEL TRAINING")
+print("=" * 70)
 
-# ============================================================
-# BƯỚC 2: CHUẨN BỊ DỮ LIỆU
-# ============================================================
-print("\n🔧 BƯỚC 2: Data Preparation...")
+base_dir = Path(__file__).resolve().parent
+data_path = base_dir / "data" / "cardio_train.csv"
+if not data_path.exists():
+    raise FileNotFoundError(f"Không tìm thấy dataset: {data_path}")
 
-# Ánh xạ tên cột từ cardio_train.csv sang tên phù hợp
-# Cardio dataset: age, gender, ap_hi (systolic), ap_lo (diastolic), cholesterol, gluc, smoke, alco, active, cardio
-if 'ap_hi' in df.columns:
-    # Cardiovascular dataset format
-    df_prep = df[['age', 'gender', 'ap_hi', 'ap_lo', 'cholesterol', 'cardio']].copy()
-    df_prep.columns = ['Age', 'Gender', 'SystolicBP', 'DiastolicBP', 'Cholesterol', 'Hypertension']
-    # Tính BMI + thêm features mưa lụa
-    df_prep['BMI'] = 25 + np.random.uniform(-5, 10, len(df_prep))
-    df_prep['HeartRate'] = 70 + np.random.randint(-20, 30, len(df_prep))
-    df_prep['Smoking'] = np.random.choice([0, 1], len(df_prep), p=[0.7, 0.3])
-    df_prep['Alcohol'] = np.random.choice([0, 1], len(df_prep), p=[0.8, 0.2])
-    df_prep['PhysicalActivity'] = 100 + np.random.randint(-50, 100, len(df_prep))
-    X = df_prep.drop('Hypertension', axis=1)
-    y = df_prep['Hypertension']
-else:
-    # Demo hoặc custom format
-    target_col = 'Hypertension' if 'Hypertension' in df.columns else df.columns[-1]
-    X = df.drop(target_col, axis=1)
-    y = df[target_col]
+print(f"\n📂 Loading dataset: {data_path}")
+df = pd.read_csv(data_path, sep=";")
+print(f"✅ Rows: {len(df)}, Columns: {len(df.columns)}")
 
-feature_names = list(X.columns)
-print(f"Features: {feature_names}")
+required_columns = ["age", "gender", "height", "weight", "ap_hi", "ap_lo", "cholesterol", "smoke", "alco", "active", "cardio"]
+missing_columns = [col for col in required_columns if col not in df.columns]
+if missing_columns:
+    raise ValueError(f"Thiếu cột bắt buộc: {missing_columns}")
 
-X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42, stratify=y)
+df = df[(df["ap_hi"] >= 80) & (df["ap_hi"] <= 240)]
+df = df[(df["ap_lo"] >= 40) & (df["ap_lo"] <= 160)]
+df = df[df["ap_hi"] > df["ap_lo"]]
 
-scaler = StandardScaler()
-X_train_scaled = scaler.fit_transform(X_train)
-X_test_scaled = scaler.transform(X_test)
+prep = pd.DataFrame()
+prep["Age"] = (df["age"] / 365.25).round(1)
+prep["Gender"] = (df["gender"] == 2).astype(int)
+prep["SystolicBP"] = df["ap_hi"]
+prep["DiastolicBP"] = df["ap_lo"]
+prep["Cholesterol"] = df["cholesterol"]
+prep["BMI"] = (df["weight"] / ((df["height"] / 100) ** 2)).clip(lower=12, upper=55)
+prep["Smoking"] = df["smoke"].astype(int)
+prep["Alcohol"] = df["alco"].astype(int)
+prep["PhysicalActivity"] = df["active"].astype(int)
 
-print(f"✅ Training set: {X_train_scaled.shape}")
-print(f"✅ Test set: {X_test_scaled.shape}")
-
-# ============================================================
-# BƯỚC 3: TRAINING MODELS
-# ============================================================
-print("\n🤖 BƯỚC 3: Training models...")
+X = prep
+y = df["cardio"].astype(int)
 
 models = {
-    'Logistic Regression': LogisticRegression(max_iter=1000, random_state=42),
-    'Random Forest': RandomForestClassifier(n_estimators=100, random_state=42),
-    'Gradient Boosting': GradientBoostingClassifier(n_estimators=100, random_state=42)
+    "LogisticRegression": LogisticRegression(max_iter=3000, random_state=42, class_weight="balanced"),
+    "RandomForest": RandomForestClassifier(
+        n_estimators=500,
+        min_samples_leaf=3,
+        random_state=42,
+        class_weight="balanced",
+        n_jobs=-1,
+    ),
+    "GradientBoosting": GradientBoostingClassifier(random_state=42),
 }
 
-results = {}
+try:
+    from xgboost import XGBClassifier
 
-for name, model in models.items():
-    print(f"\n  Training {name}...")
-    model.fit(X_train_scaled, y_train)
-    
-    y_pred = model.predict(X_test_scaled)
-    accuracy = accuracy_score(y_test, y_pred)
-    y_pred_proba = model.predict_proba(X_test_scaled)[:, 1]
-    roc_auc = roc_auc_score(y_test, y_pred_proba)
-    
-    results[name] = {'accuracy': accuracy, 'roc_auc': roc_auc, 'model': model}
-    
-    print(f"  - Accuracy: {accuracy:.4f}")
-    print(f"  - ROC AUC: {roc_auc:.4f}")
-
-# ============================================================
-# BƯỚC 4: CHỌN MODEL TỐT NHẤT
-# ============================================================
-print("\n🏆 BƯỚC 4: Model Selection...")
-best_model_name = max(results, key=lambda x: results[x]['accuracy'])
-best_model = results[best_model_name]['model']
-best_accuracy = results[best_model_name]['accuracy']
-
-print(f"\n✅ Best Model: {best_model_name}")
-print(f"✅ Accuracy: {best_accuracy:.4f}")
-
-# ============================================================
-# BƯỚC 5: LƯU MODELS
-# ============================================================
-print("\n💾 BƯỚC 5: Saving models...")
+    models["XGBoost"] = XGBClassifier(
+        n_estimators=320,
+        learning_rate=0.05,
+        max_depth=4,
+        subsample=0.9,
+        colsample_bytree=0.9,
+        reg_lambda=1.0,
+        objective="binary:logistic",
+        eval_metric="logloss",
+        random_state=42,
+        n_jobs=-1,
+        tree_method="hist",
+    )
+    print("✅ XGBoost available: included in model comparison")
+except Exception:
+    print("⚠️ XGBoost not available: skipped")
 
 try:
-    joblib.dump(best_model, 'hypertension_model.pkl')
-    joblib.dump(scaler, 'hypertension_scaler.pkl')
-    joblib.dump(feature_names, 'hypertension_features.pkl')
-    print("✅ Models saved!")
-except Exception as e:
-    print(f"❌ Error: {e}")
+    from lightgbm import LGBMClassifier
 
-print("\n" + "="*70)
-print("✅ TRAINING COMPLETED!")
-print("="*70)
+    models["LightGBM"] = LGBMClassifier(
+        n_estimators=450,
+        learning_rate=0.05,
+        num_leaves=31,
+        subsample=0.9,
+        colsample_bytree=0.9,
+        random_state=42,
+    )
+    print("✅ LightGBM available: included in model comparison")
+except Exception:
+    print("⚠️ LightGBM not available: skipped")
+
+train_binary_pipeline(
+    X=X,
+    y=y,
+    models=models,
+    disease_name="hypertension",
+    target_names=["Low Risk", "High Risk"],
+    model_path=base_dir / "hypertension_model.pkl",
+    scaler_path=base_dir / "hypertension_scaler.pkl",
+    features_path=base_dir / "hypertension_features.pkl",
+    threshold_meta_path=base_dir / "hypertension_threshold_meta.pkl",
+    imbalance_ratio_threshold=0.85,
+    calibrate_probabilities=True,
+    calibration_method='sigmoid',
+    calibration_size=0.2,
+    threshold_metric='f1',
+    min_recall_for_threshold=0.55,
+)
+
+print("=" * 70)
+print("✅ DONE")
+print("=" * 70)

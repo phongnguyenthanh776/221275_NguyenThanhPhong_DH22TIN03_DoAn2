@@ -3,6 +3,17 @@
 @{
     ViewData["Title"] = "Kết quả dự đoán";
     var riskColor = Model.Result.Contains("cao") ? "danger" : Model.Result.Contains("trung bình") ? "warning" : "success";
+    var hasVisualization = !string.IsNullOrWhiteSpace(Model.OriginalImageBase64) && !string.IsNullOrWhiteSpace(Model.AnnotatedImageBase64);
+    var isReferenceVisualization = string.Equals(Model.VisualizationMode, "reference", StringComparison.OrdinalIgnoreCase)
+        || (string.IsNullOrWhiteSpace(Model.VisualizationMode) && Model.Result.Contains("thấp", StringComparison.OrdinalIgnoreCase));
+    var visualizationCardClass = isReferenceVisualization ? "info" : "dark";
+    var visualizationTitle = isReferenceVisualization ? "Hình ảnh AI tham khảo" : "Hình ảnh AI phân tích";
+    var annotatedTitle = isReferenceVisualization ? "Ảnh AI đánh dấu vùng tham khảo" : "Ảnh AI đánh dấu vùng chú ý";
+    var hasDecisionInfo = Model.DecisionThreshold.HasValue || Model.PredictedClass.HasValue || !string.IsNullOrWhiteSpace(Model.ModelType);
+    var thresholdPercent = Model.DecisionThreshold.HasValue ? (Model.DecisionThreshold.Value * 100m) : (decimal?)null;
+    var binaryDecisionText = Model.PredictedClass.HasValue
+        ? (Model.PredictedClass.Value == 1 ? "Vượt ngưỡng cảnh báo" : "Chưa vượt ngưỡng cảnh báo")
+        : null;
 }
 
 <div class="row justify-content-center">
@@ -45,6 +56,65 @@
                     <p class="mb-0">@Model.Details</p>
                 </div>
 
+                @if (hasDecisionInfo)
+                {
+                    <div class="card bg-light border-0 shadow-sm mb-4">
+                        <div class="card-body">
+                            <h5 class="mb-3"><i class="bi bi-cpu"></i> Thông tin quyết định AI</h5>
+                            <p class="mb-1"><strong>Điểm nguy cơ (probability):</strong> @Model.RiskLevel.ToString("0.0")%</p>
+                            @if (thresholdPercent.HasValue)
+                            {
+                                <p class="mb-1"><strong>Ngưỡng quyết định:</strong> @thresholdPercent.Value.ToString("0.0")%</p>
+                            }
+                            @if (!string.IsNullOrWhiteSpace(binaryDecisionText))
+                            {
+                                <p class="mb-1"><strong>Kết luận nhị phân:</strong> @binaryDecisionText</p>
+                            }
+                            @if (!string.IsNullOrWhiteSpace(Model.ModelType))
+                            {
+                                <p class="mb-0"><strong>Mô hình:</strong> @Model.ModelType</p>
+                            }
+                        </div>
+                    </div>
+                }
+
+                @if (hasVisualization)
+                {
+                    <div class="card border-0 shadow-sm mb-4">
+                        <div class="card-header bg-@visualizationCardClass text-white">
+                            <h5 class="mb-0"><i class="bi bi-bounding-box"></i> @visualizationTitle</h5>
+                        </div>
+                        <div class="card-body">
+                            <div class="row g-4">
+                                <div class="col-lg-6">
+                                    <div class="border rounded-3 p-3 bg-light h-100">
+                                        <h6 class="fw-bold text-center mb-3">Ảnh gốc</h6>
+                                        <img src="data:image/png;base64,@Model.OriginalImageBase64"
+                                             class="img-fluid rounded shadow-sm w-100"
+                                             alt="Ảnh y tế gốc" />
+                                    </div>
+                                </div>
+                                <div class="col-lg-6">
+                                    <div class="border rounded-3 p-3 bg-light h-100">
+                                        <h6 class="fw-bold text-center mb-3">@annotatedTitle</h6>
+                                        <img src="data:image/png;base64,@Model.AnnotatedImageBase64"
+                                             class="img-fluid rounded shadow-sm w-100"
+                                             alt="Ảnh y tế đã khoanh vùng" />
+                                    </div>
+                                </div>
+                            </div>
+
+                            @if (!string.IsNullOrWhiteSpace(Model.VisualizationNote))
+                            {
+                                <div class="alert alert-secondary mt-4 mb-0">
+                                    <i class="bi bi-eye"></i>
+                                    <strong>Ghi chú hình ảnh:</strong> @Model.VisualizationNote
+                                </div>
+                            }
+                        </div>
+                    </div>
+                }
+
                 <div class="card bg-light mb-4">
                     <div class="card-body">
                         <h5><i class="bi bi-lightbulb"></i> Lời khuyên:</h5>
@@ -64,9 +134,9 @@
                 <div class="alert alert-info">
                     <small>
                         <i class="bi bi-robot"></i> <strong>Về mô hình AI:</strong><br />
-                        Hiện tại hệ thống sử dụng thuật toán giả lập dựa trên các ngưỡng y khoa cơ bản. 
-                        Sau khi hoàn thiện việc train Machine Learning model từ Kaggle dataset (Heart Disease / Diabetes), 
-                        độ chính xác sẽ được cải thiện đáng kể.
+                        Hệ thống hiện sử dụng các mô hình AI đã được nạp ở backend để suy luận nguy cơ bệnh.
+                        Với các bệnh chẩn đoán bằng ảnh, vùng được khoanh chỉ là vùng nghi ngờ do hệ thống gợi ý để hỗ trợ quan sát,
+                        không phải kết luận chẩn đoán hình ảnh cuối cùng.
                     </small>
                 </div>
 

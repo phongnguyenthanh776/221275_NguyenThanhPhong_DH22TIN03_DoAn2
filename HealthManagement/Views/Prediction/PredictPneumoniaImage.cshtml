@@ -1,0 +1,41 @@
+@{
+    ViewData["Title"] = "Dự đoán Viêm Phổi từ Ảnh X-Quang";
+}
+
+<div class="row justify-content-center">
+    <div class="col-md-8">
+        <div class="card">
+            <div class="card-header bg-success text-white">
+                <h4><i class="bi bi-lungs"></i> Dự đoán Viêm Phổi từ Ảnh X-Quang</h4>
+            </div>
+            <div class="card-body">
+                <div class="alert alert-warning">
+                    <strong>Lưu ý:</strong> Ảnh nên là X-quang ngực thẳng, rõ cấu trúc phổi, định dạng JPG/PNG.
+                </div>
+
+                @if (!ViewData.ModelState.IsValid)
+                {
+                    <div asp-validation-summary="All" class="text-danger mb-3"></div>
+                }
+
+                <form asp-action="PredictPneumoniaImage" method="post" enctype="multipart/form-data">
+                    @Html.AntiForgeryToken()
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">Chọn ảnh X-quang phổi *</label>
+                        <input type="file" name="imageFile" class="form-control" accept=".jpg,.jpeg,.png,.bmp" required />
+                        <small class="text-muted">Khuyến nghị ảnh full chest để model đánh giá tốt hơn.</small>
+                    </div>
+
+                    <div class="d-grid gap-2 mt-4">
+                        <button type="submit" class="btn btn-success btn-lg">
+                            <i class="bi bi-upload"></i> Tải ảnh và dự đoán
+                        </button>
+                        <a href="/Prediction/SelectDisease" class="btn btn-outline-secondary">
+                            <i class="bi bi-arrow-left"></i> Quay lại chọn bệnh
+                        </a>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>

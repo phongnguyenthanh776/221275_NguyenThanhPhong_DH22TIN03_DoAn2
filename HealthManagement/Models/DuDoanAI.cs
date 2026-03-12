@@ -11,7 +11,9 @@ namespace HealthManagement.Models
         HeartDisease,    // Bệnh Tim
         Diabetes,        // Bệnh Tiểu Đường
         Hypertension,    // Huyết Áp Cao
-        Stroke           // Đột Quỵ
+        Stroke,          // Đột Quỵ
+        KidneyStone,     // Sỏi Thận (Ảnh CT)
+        Pneumonia        // Viêm Phổi (Ảnh X-Quang)
     }
 
     /// <summary>
@@ -80,6 +82,14 @@ namespace HealthManagement.Models
         public decimal RiskLevel { get; set; }
         public string Recommendation { get; set; } = string.Empty;
         public string Details { get; set; } = string.Empty;
+        public string? OriginalImageBase64 { get; set; }
+        public string? AnnotatedImageBase64 { get; set; }
+        public string? VisualizationNote { get; set; }
+        public string? VisualizationMode { get; set; }
+        public decimal? Probability { get; set; }
+        public int? PredictedClass { get; set; }
+        public decimal? DecisionThreshold { get; set; }
+        public string? ModelType { get; set; }
     }
 
     // ============================================================

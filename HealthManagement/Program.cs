@@ -53,9 +53,10 @@ builder.Services.AddScoped<HealthManagement.Services.IEmailService, HealthManage
 builder.Services.AddHostedService<HealthManagement.Services.ReminderBackgroundService>();
 
 // Cấu hình HttpClient cho AIService (gọi Flask API)
+var aiTimeoutSeconds = Math.Max(5, builder.Configuration.GetValue<int>("AISettings:TimeoutSeconds", 30));
 builder.Services.AddHttpClient<IAIService, AIService>(client =>
 {
-    client.Timeout = TimeSpan.FromSeconds(30);
+    client.Timeout = TimeSpan.FromSeconds(aiTimeoutSeconds);
     client.DefaultRequestHeaders.Add("Accept", "application/json");
 });
 

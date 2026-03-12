@@ -1,5 +1,12 @@
 ## .gitignore for ASP.NET Core
 
+# Exclude report file
+baocao_tonghop.md
+
+# Exclude large training image datasets (too large for GitHub)
+AIModel/data/CT-KIDNEY-DATASET-Normal-Cyst-Tumor-Stone/
+AIModel/data/chest_xray/
+
 # Build results
 [Dd]ebug/
 [Dd]ebugPublic/
