@@ -36,10 +36,95 @@ jobs:
       - name: Publish
         run: dotnet publish HealthManagement/HealthManagement.csproj --configuration Release --output publish --no-build
 
-      - name: Deploy to Azure Web App
-        uses: azure/webapps-deploy@v3
-        with:
-          app-name: HealthManagement
-          slot-name: production
-          package: publish
-          publish-profile: ${{ secrets.AZURE_WEBAPP_PUBLISH_PROFILE }}
+      - name: Deploy to Azure Web App via Kudu ZipDeploy
+        shell: bash
+        env:
+          PUBLISH_PROFILE: ${{ secrets.AZURE_WEBAPP_PUBLISH_PROFILE }}
+        run: |
+          set -euo pipefail
+
+          # Parse ZipDeploy credentials from publish profile XML.
+          python3 - <<'PY'
+          import json
+          import os
+          import sys
+          import xml.etree.ElementTree as ET
+
+          xml_text = os.environ.get("PUBLISH_PROFILE", "").strip()
+          if not xml_text:
+              print("PUBLISH_PROFILE secret is empty.", file=sys.stderr)
+              sys.exit(1)
+
+          try:
+              root = ET.fromstring(xml_text)
+          except ET.ParseError as exc:
+              print(f"Invalid publish profile XML: {exc}", file=sys.stderr)
+              sys.exit(1)
+
+          zip_profile = None
+          for profile in root.findall('.//publishProfile'):
+              method = profile.attrib.get('publishMethod', '').lower()
+              if method == 'zipdeploy':
+                  zip_profile = profile
+                  break
+
+          if zip_profile is None:
+              print("No ZipDeploy profile found in publish profile.", file=sys.stderr)
+              sys.exit(1)
+
+          publish_url = zip_profile.attrib.get('publishUrl', '').replace(':443', '')
+          username = zip_profile.attrib.get('userName', '')
+          password = zip_profile.attrib.get('userPWD', '')
+
+          if not publish_url or not username or not password:
+              print("ZipDeploy profile is missing publishUrl/userName/userPWD.", file=sys.stderr)
+              sys.exit(1)
+
+          with open('kudu_env.sh', 'w', encoding='utf-8') as f:
+              f.write(f'KUDU_URL="https://{publish_url}"\\n')
+              f.write(f'KUDU_USER={json.dumps(username)}\\n')
+              f.write(f'KUDU_PASS={json.dumps(password)}\\n')
+          PY
+
+          source kudu_env.sh
+
+          cd publish
+          zip -r ../site.zip . >/dev/null
+          cd ..
+
+          echo "Submitting package to Kudu ZipDeploy..."
+          DEPLOY_RESPONSE=$(curl -sS -u "$KUDU_USER:$KUDU_PASS" -X POST -H "Content-Type: application/zip" --data-binary @site.zip "$KUDU_URL/api/zipdeploy?isAsync=true")
+          STATUS_URL=$(echo "$DEPLOY_RESPONSE" | python3 -c 'import json,sys; d=json.load(sys.stdin); print(d.get("status_url", ""))')
+
+          if [ -z "$STATUS_URL" ]; then
+            STATUS_URL="$KUDU_URL/api/deployments/latest"
+          fi
+
+          echo "Polling deployment status..."
+          for i in {1..60}; do
+            STATUS_JSON=$(curl -sS -u "$KUDU_USER:$KUDU_PASS" "$STATUS_URL")
+            STATUS_CODE=$(echo "$STATUS_JSON" | python3 -c 'import json,sys; d=json.load(sys.stdin); print(d.get("status", -1))')
+            PROGRESS=$(echo "$STATUS_JSON" | python3 -c 'import json,sys; d=json.load(sys.stdin); print(d.get("progress", ""))')
+            echo "status=$STATUS_CODE progress=$PROGRESS"
+
+            if [ "$STATUS_CODE" = "4" ]; then
+              echo "Deployment succeeded."
+              exit 0
+            fi
+
+            if [ "$STATUS_CODE" = "3" ]; then
+              echo "Deployment failed. Fetching detailed logs..."
+              DEPLOY_ID=$(echo "$STATUS_JSON" | python3 -c 'import json,sys; d=json.load(sys.stdin); print(d.get("id", ""))')
+              if [ -n "$DEPLOY_ID" ]; then
+                curl -sS -u "$KUDU_USER:$KUDU_PASS" "$KUDU_URL/api/deployments/$DEPLOY_ID/log" || true
+              else
+                curl -sS -u "$KUDU_USER:$KUDU_PASS" "$KUDU_URL/api/deployments/latest/log" || true
+              fi
+              exit 1
+            fi
+
+            sleep 10
+          done
+
+          echo "Deployment timed out while waiting for completion."
+          exit 1
