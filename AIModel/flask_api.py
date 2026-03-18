@@ -17,6 +17,16 @@ import builtins
 from io import BytesIO
 from PIL import Image, ImageDraw, ImageFilter, ImageOps, ImageFont
 
+# FIX UNICODE ENCODING ISSUE - must be defined BEFORE any print calls
+def safe_print(*args, **kwargs):
+    try:
+        builtins.print(*args, **kwargs)
+    except UnicodeEncodeError:
+        normalized_args = [str(arg).encode('ascii', errors='ignore').decode('ascii') for arg in args]
+        builtins.print(*normalized_args, **kwargs)
+
+print = safe_print
+
 try:
     import torch
     try:
@@ -30,15 +40,6 @@ except Exception as torch_image_error:
     predict_probability_and_gradcam = None
     TORCH_IMAGE_SUPPORT = False
     print(f"⚠️  PyTorch image pipeline unavailable: {torch_image_error}")
-
-def safe_print(*args, **kwargs):
-    try:
-        builtins.print(*args, **kwargs)
-    except UnicodeEncodeError:
-        normalized_args = [str(arg).encode('ascii', errors='ignore').decode('ascii') for arg in args]
-        builtins.print(*normalized_args, **kwargs)
-
-print = safe_print
 
 app = Flask(__name__)
 CORS(app)  # Enable CORS for C# application
