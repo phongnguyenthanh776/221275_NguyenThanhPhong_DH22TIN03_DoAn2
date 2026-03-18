@@ -1,0 +1,44 @@
+name: Deploy HealthManagement Web App
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - main
+    paths:
+      - HealthManagement/**
+      - .github/workflows/deploy-healthmanagement.yml
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout only web project
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+          sparse-checkout: |
+            HealthManagement
+          sparse-checkout-cone-mode: false
+
+      - name: Setup .NET SDK
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 8.0.x
+
+      - name: Restore
+        run: dotnet restore HealthManagement/HealthManagement.csproj
+
+      - name: Build
+        run: dotnet build HealthManagement/HealthManagement.csproj --configuration Release --no-restore
+
+      - name: Publish
+        run: dotnet publish HealthManagement/HealthManagement.csproj --configuration Release --output publish --no-build
+
+      - name: Deploy to Azure Web App
+        uses: azure/webapps-deploy@v3
+        with:
+          app-name: HealthManagement
+          package: publish
+          publish-profile: ${{ secrets.AZURE_WEBAPP_PUBLISH_PROFILE }}
