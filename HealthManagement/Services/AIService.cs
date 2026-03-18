@@ -411,6 +411,10 @@ namespace HealthManagement.Services
                     }
 
                     var pythonExecutable = ResolvePythonExecutable();
+
+                    // Kill any stale process occupying the Flask port before starting fresh
+                    KillProcessOnPort(apiUrl);
+
                     _logger.LogInformation("🚀 Starting Flask API using {PythonExecutable}", pythonExecutable);
 
                     var processStartInfo = new ProcessStartInfo
@@ -500,6 +504,72 @@ namespace HealthManagement.Services
             }
 
             return "http://localhost:5000/health";
+        }
+
+        private void KillProcessOnPort(string apiUrl)
+        {
+            int port = 5000;
+            if (Uri.TryCreate(apiUrl, UriKind.Absolute, out var uri))
+            {
+                port = uri.Port;
+            }
+
+            try
+            {
+                // netstat -ano lists: proto  local  remote  state  pid
+                var netstat = Process.Start(new ProcessStartInfo
+                {
+                    FileName = "netstat",
+                    Arguments = "-ano",
+                    UseShellExecute = false,
+                    CreateNoWindow = true,
+                    RedirectStandardOutput = true
+                });
+
+                if (netstat == null) return;
+
+                var output = netstat.StandardOutput.ReadToEnd();
+                netstat.WaitForExit();
+
+                // Look for LISTENING lines on the target port
+                foreach (var line in output.Split('\n'))
+                {
+                    var trimmed = line.Trim();
+                    // Match lines like: TCP  0.0.0.0:5000  0.0.0.0:0  LISTENING  1234
+                    if (!trimmed.StartsWith("TCP", StringComparison.OrdinalIgnoreCase)) continue;
+                    if (!trimmed.Contains($":{port} ", StringComparison.Ordinal) &&
+                        !trimmed.Contains($":{port}\t", StringComparison.Ordinal) &&
+                        !trimmed.EndsWith($":{port}", StringComparison.Ordinal)) continue;
+
+                    var parts = trimmed.Split(new[] { ' ', '\t' }, StringSplitOptions.RemoveEmptyEntries);
+                    // parts: [TCP, local_addr, remote_addr, state, PID] (LISTENING lines have 5 columns)
+                    if (parts.Length < 5) continue;
+                    if (!parts[3].Equals("LISTENING", StringComparison.OrdinalIgnoreCase)) continue;
+
+                    if (int.TryParse(parts[4], out var pid) && pid > 0)
+                    {
+                        try
+                        {
+                            var stale = System.Diagnostics.Process.GetProcessById(pid);
+                            _logger.LogWarning("⚠️ Killing stale process PID={Pid} ({Name}) on port {Port}", pid, stale.ProcessName, port);
+                            stale.Kill(entireProcessTree: true);
+                            stale.WaitForExit(2000);
+                        }
+                        catch (ArgumentException)
+                        {
+                            // Process already gone – fine
+                        }
+                        catch (Exception killEx)
+                        {
+                            _logger.LogWarning(killEx, "⚠️ Could not kill PID={Pid}", pid);
+                        }
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(ex, "⚠️ KillProcessOnPort failed (non-fatal)");
+            }
         }
 
         private string ResolveFlaskScriptPath()

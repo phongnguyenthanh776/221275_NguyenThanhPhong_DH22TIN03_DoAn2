@@ -46,8 +46,9 @@ namespace HealthManagement.Services
                 return new HealthTrendAnalysis { HasData = false };
 
             var latestMetric = metrics.Last();
-            var aiPredictions = await PredictAllDiseasesAsync(maNguoiDung, latestMetric);
-            var aiHealthScore = CalculateHealthScore(aiPredictions);
+            var metricPredictions = await PredictAllDiseasesAsync(maNguoiDung, latestMetric);
+            var aiPredictions = await AppendImagePredictionsAsync(maNguoiDung, metricPredictions, includeFallbackForMissing: true);
+            var aiHealthScore = CalculateHealthScore(metricPredictions);
 
             var analysis = new HealthTrendAnalysis
             {
@@ -83,7 +84,7 @@ namespace HealthManagement.Services
 
                 // Overall Health Score (0-100) dựa trên AI risk (không dùng rule)
                 OverallHealthScore = aiHealthScore,
-                AverageRiskLevel = aiPredictions.Any() ? aiPredictions.Average(p => p.RiskLevel) : 0,
+                AverageRiskLevel = metricPredictions.Any() ? metricPredictions.Average(p => p.RiskLevel) : 0,
                 AiPredictions = aiPredictions
             };
 
@@ -102,9 +103,11 @@ namespace HealthManagement.Services
                 .OrderByDescending(cs => cs.NgayDo)
                 .FirstOrDefaultAsync();
 
-            if (latestMetric == null) return alerts;
+            var predictions = latestMetric != null
+                ? await PredictAllDiseasesAsync(maNguoiDung, latestMetric)
+                : new List<PredictionResponse>();
 
-            var predictions = await PredictAllDiseasesAsync(maNguoiDung, latestMetric);
+            predictions = await AppendImagePredictionsAsync(maNguoiDung, predictions, includeFallbackForMissing: true);
 
             foreach (var prediction in predictions)
             {
@@ -418,6 +421,69 @@ namespace HealthManagement.Services
                 .ToListAsync();
         }
 
+        private async Task<PredictionResponse?> GetLatestPredictionAsync(int maNguoiDung, DiseaseType diseaseType)
+        {
+            return await _context.DuDoanAI
+                .Where(d => d.MaNguoiDung == maNguoiDung && d.LoaiBenhDuDoan == diseaseType)
+                .OrderByDescending(d => d.NgayDuDoan)
+                .Select(d => new PredictionResponse
+                {
+                    DiseaseType = d.LoaiBenhDuDoan.ToString(),
+                    Result = d.KetQua,
+                    RiskLevel = d.MucDoNguyCo,
+                    Recommendation = d.GoiY ?? string.Empty,
+                    Details = d.ChiTietDuDoan ?? string.Empty
+                })
+                .FirstOrDefaultAsync();
+        }
+
+        private async Task<List<PredictionResponse>> AppendImagePredictionsAsync(
+            int maNguoiDung,
+            List<PredictionResponse> basePredictions,
+            bool includeFallbackForMissing)
+        {
+            var predictions = basePredictions.ToList();
+
+            var kidneyStonePrediction = await GetLatestPredictionAsync(maNguoiDung, DiseaseType.KidneyStone);
+            if (kidneyStonePrediction != null)
+            {
+                predictions.Add(kidneyStonePrediction);
+            }
+            else if (includeFallbackForMissing)
+            {
+                predictions.Add(CreateMissingImagePrediction(DiseaseType.KidneyStone));
+            }
+
+            var pneumoniaPrediction = await GetLatestPredictionAsync(maNguoiDung, DiseaseType.Pneumonia);
+            if (pneumoniaPrediction != null)
+            {
+                predictions.Add(pneumoniaPrediction);
+            }
+            else if (includeFallbackForMissing)
+            {
+                predictions.Add(CreateMissingImagePrediction(DiseaseType.Pneumonia));
+            }
+
+            return predictions;
+        }
+
+        private static PredictionResponse CreateMissingImagePrediction(DiseaseType diseaseType)
+        {
+            var diseaseName = diseaseType == DiseaseType.KidneyStone ? "Sỏi thận" : "Viêm phổi";
+            var details = diseaseType == DiseaseType.KidneyStone
+                ? "Chưa có kết quả dự đoán từ ảnh CT thận gần đây."
+                : "Chưa có kết quả dự đoán từ ảnh X-quang phổi gần đây.";
+
+            return new PredictionResponse
+            {
+                DiseaseType = diseaseType.ToString(),
+                Result = "Chưa có dữ liệu ảnh",
+                RiskLevel = 0,
+                Details = details,
+                Recommendation = $"Tải ảnh để hệ thống AI đánh giá nguy cơ {diseaseName}."
+            };
+        }
+
         private AlertSeverity MapSeverity(string result)
         {
             if (string.IsNullOrWhiteSpace(result)) return AlertSeverity.Low;
@@ -439,6 +505,8 @@ namespace HealthManagement.Services
                 "diabetes" => ("Tiểu đường", "🩺"),
                 "hypertension" => ("Huyết áp", "🔴"),
                 "stroke" => ("Đột quỵ", "🧠"),
+                "kidneystone" or "kidney_stone" => ("Thận", "🪨"),
+                "pneumonia" => ("Hô hấp", "🫁"),
                 _ => ("Sức khỏe", "⚕️")
             };
         }

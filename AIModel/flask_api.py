@@ -405,20 +405,168 @@ def colorize_attention_map(attention_map, reference_mode):
     return np.dstack([red, green, blue])
 
 
-def build_pneumonia_lung_mask(width, height):
+def weighted_bounds(weights, lower_q=0.03, upper_q=0.97):
+    arr = np.clip(np.asarray(weights, dtype=np.float32), 0.0, None)
+    if arr.size <= 1:
+        return 0, int(arr.size)
+
+    total = float(arr.sum())
+    if total <= 1e-6:
+        return 0, int(arr.size)
+
+    cdf = np.cumsum(arr)
+    left = int(np.searchsorted(cdf, total * float(lower_q), side='left'))
+    right = int(np.searchsorted(cdf, total * float(upper_q), side='left')) + 1
+    left = max(0, min(left, arr.size - 1))
+    right = max(left + 1, min(right, arr.size))
+    return left, right
+
+
+def enforce_min_span(start, end, min_span, limit):
+    span = int(end - start)
+    min_span = max(1, int(min_span))
+    limit = max(1, int(limit))
+    if span >= min_span:
+        return max(0, int(start)), min(limit, int(end))
+
+    center = int((start + end) // 2)
+    new_start = max(0, center - (min_span // 2))
+    new_end = min(limit, new_start + min_span)
+    new_start = max(0, new_end - min_span)
+    return int(new_start), int(new_end)
+
+
+def normalize_bbox(bbox, width, height):
+    if bbox is None:
+        return 0, 0, int(width), int(height)
+
+    x1, y1, x2, y2 = [int(v) for v in bbox]
+    x1 = max(0, min(x1, width - 1))
+    y1 = max(0, min(y1, height - 1))
+    x2 = max(x1 + 1, min(x2, width))
+    y2 = max(y1 + 1, min(y2, height))
+    return x1, y1, x2, y2
+
+
+def estimate_anatomy_bbox(gray_arr, disease_type=None):
+    arr = np.asarray(gray_arr, dtype=np.float32)
+    height, width = arr.shape
+    if height < 8 or width < 8:
+        return 0, 0, width, height
+
+    disease_type = str(disease_type or '').strip().lower()
+    blurred = np.asarray(
+        Image.fromarray(np.clip(arr, 0.0, 255.0).astype(np.uint8)).filter(ImageFilter.GaussianBlur(radius=2)),
+        dtype=np.float32
+    )
+
+    base_percentile = 12.0 if disease_type == 'pneumonia_image' else 18.0
+    baseline = float(np.percentile(blurred, base_percentile))
+    signal = np.clip(blurred - baseline, 0.0, None)
+
     yy, xx = np.mgrid[0:height, 0:width]
-    left_lung = (((xx - (width * 0.32)) / max(width * 0.18, 1.0)) ** 2 + ((yy - (height * 0.52)) / max(height * 0.34, 1.0)) ** 2) <= 1.0
-    right_lung = (((xx - (width * 0.68)) / max(width * 0.18, 1.0)) ** 2 + ((yy - (height * 0.52)) / max(height * 0.34, 1.0)) ** 2) <= 1.0
+    cx = (width - 1) * 0.5
+    cy = (height - 1) * 0.5
+    sigma_x = max(width * (0.34 if disease_type == 'pneumonia_image' else 0.38), 1.0)
+    sigma_y = max(height * (0.42 if disease_type == 'pneumonia_image' else 0.40), 1.0)
+    center_prior = np.exp(
+        -(
+            ((xx - cx) ** 2) / (2.0 * sigma_x * sigma_x) +
+            ((yy - cy) ** 2) / (2.0 * sigma_y * sigma_y)
+        )
+    )
+
+    weighted = signal * center_prior
+    if float(weighted.sum()) <= 1e-6:
+        return 0, 0, width, height
+
+    x1, x2 = weighted_bounds(weighted.sum(axis=0), lower_q=0.02, upper_q=0.98)
+    y1, y2 = weighted_bounds(weighted.sum(axis=1), lower_q=0.02, upper_q=0.98)
+
+    pad_x = int((x2 - x1) * (0.10 if disease_type == 'pneumonia_image' else 0.12))
+    pad_y = int((y2 - y1) * (0.08 if disease_type == 'pneumonia_image' else 0.10))
+    x1 = max(0, x1 - pad_x)
+    y1 = max(0, y1 - pad_y)
+    x2 = min(width, x2 + pad_x)
+    y2 = min(height, y2 + pad_y)
+
+    min_w = max(24, int(width * (0.42 if disease_type == 'pneumonia_image' else 0.32)))
+    min_h = max(24, int(height * (0.56 if disease_type == 'pneumonia_image' else 0.36)))
+    x1, x2 = enforce_min_span(x1, x2, min_w, width)
+    y1, y2 = enforce_min_span(y1, y2, min_h, height)
+
+    return normalize_bbox((x1, y1, x2, y2), width, height)
+
+
+def build_soft_bbox_mask(width, height, bbox, blur_ratio=0.045):
+    x1, y1, x2, y2 = normalize_bbox(bbox, width, height)
+    mask = np.zeros((height, width), dtype=np.uint8)
+    mask[y1:y2, x1:x2] = 255
+    blur_radius = max(2, int(min(width, height) * float(blur_ratio)))
+    softened = Image.fromarray(mask).filter(ImageFilter.GaussianBlur(radius=blur_radius))
+    arr = np.asarray(softened, dtype=np.float32) / 255.0
+    return np.clip(arr, 0.0, 1.0)
+
+
+def build_pneumonia_lung_mask(width, height, anatomy_bbox=None):
+    x1, y1, x2, y2 = normalize_bbox(anatomy_bbox, width, height)
+    bbox_w = max(1.0, float(x2 - x1))
+    bbox_h = max(1.0, float(y2 - y1))
+
+    yy, xx = np.mgrid[0:height, 0:width]
+    left_lung = (
+        ((xx - (x1 + (bbox_w * 0.34))) / max(bbox_w * 0.18, 1.0)) ** 2 +
+        ((yy - (y1 + (bbox_h * 0.54))) / max(bbox_h * 0.34, 1.0)) ** 2
+    ) <= 1.0
+    right_lung = (
+        ((xx - (x1 + (bbox_w * 0.66))) / max(bbox_w * 0.18, 1.0)) ** 2 +
+        ((yy - (y1 + (bbox_h * 0.54))) / max(bbox_h * 0.34, 1.0)) ** 2
+    ) <= 1.0
     return (left_lung | right_lung).astype(np.float32)
+
+
+def build_kidney_focus_mask(width, height, anatomy_bbox=None):
+    x1, y1, x2, y2 = normalize_bbox(anatomy_bbox, width, height)
+    bbox_w = max(1.0, float(x2 - x1))
+    bbox_h = max(1.0, float(y2 - y1))
+
+    yy, xx = np.mgrid[0:height, 0:width]
+    left_kidney = (
+        ((xx - (x1 + (bbox_w * 0.34))) / max(bbox_w * 0.13, 1.0)) ** 2 +
+        ((yy - (y1 + (bbox_h * 0.58))) / max(bbox_h * 0.17, 1.0)) ** 2
+    ) <= 1.0
+    right_kidney = (
+        ((xx - (x1 + (bbox_w * 0.66))) / max(bbox_w * 0.13, 1.0)) ** 2 +
+        ((yy - (y1 + (bbox_h * 0.58))) / max(bbox_h * 0.17, 1.0)) ** 2
+    ) <= 1.0
+    center_collecting = (
+        ((xx - (x1 + (bbox_w * 0.50))) / max(bbox_w * 0.20, 1.0)) ** 2 +
+        ((yy - (y1 + (bbox_h * 0.58))) / max(bbox_h * 0.22, 1.0)) ** 2
+    ) <= 1.0
+
+    return (left_kidney | right_kidney | center_collecting).astype(np.float32)
 
 
 def build_gradcam_overlay(original, attention_map, reference_mode, disease_type=None):
     width, height = original.size
     normalized_map = resize_attention_map(attention_map, width, height)
+    disease_type = str(disease_type or '').strip().lower()
+
+    gray_arr = np.asarray(ImageOps.autocontrast(original.convert('L')), dtype=np.float32)
+    anatomy_bbox = estimate_anatomy_bbox(gray_arr, disease_type=disease_type)
+    anatomy_mask = build_soft_bbox_mask(width, height, anatomy_bbox, blur_ratio=0.050)
+    normalized_map = normalized_map * (0.22 + (0.78 * anatomy_mask))
 
     # X-quang phoi: gioi han heatmap vao vung phe truoc khi phu mau.
-    if str(disease_type or '').strip().lower() == 'pneumonia_image':
-        normalized_map = normalized_map * build_pneumonia_lung_mask(width, height)
+    if disease_type == 'pneumonia_image':
+        lung_mask = build_pneumonia_lung_mask(width, height, anatomy_bbox=anatomy_bbox)
+        normalized_map = normalized_map * lung_mask
+    elif disease_type == 'kidney_stone_image':
+        kidney_mask = build_kidney_focus_mask(width, height, anatomy_bbox=anatomy_bbox)
+        normalized_map = normalized_map * (0.35 + (0.65 * kidney_mask))
+
+    normalized_map -= float(normalized_map.min())
+    normalized_map /= max(float(normalized_map.max()), 1e-6)
 
     # Remove weak activations so overlay does not tint the entire image.
     focus_floor = 0.58 if reference_mode else 0.42
@@ -648,6 +796,9 @@ def find_label_rect_for_region(region_rect, label_width, label_height, image_wid
 
 def build_fallback_region(arr, focus_mask, relative_size):
     height, width = arr.shape
+    if not np.any(focus_mask):
+        focus_mask = np.ones_like(arr, dtype=bool)
+
     focus_values = np.where(focus_mask, arr, -1)
     peak_y, peak_x = np.unravel_index(np.argmax(focus_values), focus_values.shape)
 
@@ -675,20 +826,31 @@ def detect_kidney_stone_regions(gray_arr):
         dtype=np.float32
     )
 
+    anatomy_bbox = estimate_anatomy_bbox(smoothed, disease_type='kidney_stone_image')
+    x1, y1, x2, y2 = anatomy_bbox
     yy, xx = np.mgrid[0:height, 0:width]
+    margin_x = max(2, int((x2 - x1) * 0.06))
+    margin_y = max(2, int((y2 - y1) * 0.08))
     center_mask = (
-        (xx >= width * 0.12) & (xx <= width * 0.88) &
-        (yy >= height * 0.12) & (yy <= height * 0.88)
+        (xx >= (x1 + margin_x)) & (xx <= (x2 - margin_x)) &
+        (yy >= (y1 + margin_y)) & (yy <= (y2 - margin_y))
     )
+    if np.count_nonzero(center_mask) < max(100, int(gray_arr.size * 0.02)):
+        center_mask = (
+            (xx >= width * 0.12) & (xx <= width * 0.88) &
+            (yy >= height * 0.12) & (yy <= height * 0.88)
+        )
 
     focus = smoothed[center_mask]
-    threshold = max(np.percentile(focus, 99.4), focus.mean() + 1.8 * focus.std())
+    if focus.size == 0:
+        focus = smoothed.reshape(-1)
+    threshold = max(np.percentile(focus, 99.4), float(focus.mean() + (1.8 * focus.std())))
     candidates = (smoothed >= threshold) & center_mask
     min_area = max(14, int(gray_arr.size * 0.00015))
     regions = find_connected_regions(candidates, min_area)
 
-    center_x = width / 2.0
-    center_y = height / 2.0
+    center_x = (x1 + x2) / 2.0
+    center_y = (y1 + y2) / 2.0
 
     for region in regions:
         x = region['x']
@@ -719,13 +881,18 @@ def detect_pneumonia_regions(gray_arr):
     blurred = np.asarray(base_img.filter(ImageFilter.GaussianBlur(radius=10)), dtype=np.float32)
     opacity = enhanced - blurred
 
-    yy, xx = np.mgrid[0:height, 0:width]
-    left_lung = (((xx - (width * 0.32)) / max(width * 0.18, 1.0)) ** 2 + ((yy - (height * 0.52)) / max(height * 0.34, 1.0)) ** 2) <= 1.0
-    right_lung = (((xx - (width * 0.68)) / max(width * 0.18, 1.0)) ** 2 + ((yy - (height * 0.52)) / max(height * 0.34, 1.0)) ** 2) <= 1.0
-    lung_mask = left_lung | right_lung
+    anatomy_bbox = estimate_anatomy_bbox(enhanced, disease_type='pneumonia_image')
+    lung_mask = build_pneumonia_lung_mask(width, height, anatomy_bbox=anatomy_bbox) > 0.5
+    soft_anatomy = build_soft_bbox_mask(width, height, anatomy_bbox, blur_ratio=0.045)
+    lung_mask = lung_mask & (soft_anatomy > 0.18)
 
     lung_pixels = enhanced[lung_mask]
     opacity_pixels = opacity[lung_mask]
+    if lung_pixels.size == 0 or opacity_pixels.size == 0:
+        lung_mask = np.ones((height, width), dtype=bool)
+        lung_pixels = enhanced[lung_mask]
+        opacity_pixels = opacity[lung_mask]
+
     bright_threshold = max(np.percentile(lung_pixels, 72), lung_pixels.mean() + 0.35 * lung_pixels.std())
     opacity_threshold = opacity_pixels.mean() + 0.20 * opacity_pixels.std()
 
