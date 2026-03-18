@@ -45,7 +45,8 @@ jobs:
           command -v zip >/dev/null 2>&1 || { echo "zip command is not available on runner"; exit 1; }
 
           # Parse ZipDeploy credentials from publish profile XML.
-          python3 - <<'PY'
+          PARSED_KUDU=$(python3 - <<'PY'
+          import base64
           import os
           import sys
           import xml.etree.ElementTree as ET
@@ -80,18 +81,30 @@ jobs:
               print("ZipDeploy profile is missing publishUrl/userName/userPWD.", file=sys.stderr)
               sys.exit(1)
 
-          def sh_single_quote(value: str) -> str:
-              return "'" + value.replace("'", "'\"'\"'") + "'"
+          def b64(s: str) -> str:
+              return base64.b64encode(s.encode('utf-8')).decode('ascii')
 
-          with open('kudu_env.sh', 'w', encoding='utf-8') as f:
-              f.write(f"KUDU_URL={sh_single_quote('https://' + publish_url)}\\n")
-              f.write(f"KUDU_USER={sh_single_quote(username)}\\n")
-              f.write(f"KUDU_PASS={sh_single_quote(password)}\\n")
-
-          print(f"ZipDeploy endpoint: https://{publish_url}")
+          print(b64('https://' + publish_url))
+          print(b64(username))
+          print(b64(password))
+          print(f"ZipDeploy endpoint: https://{publish_url}", file=sys.stderr)
           PY
+          )
 
-          source kudu_env.sh
+          readarray -t PARSED_LINES <<< "$PARSED_KUDU"
+          if [ "${#PARSED_LINES[@]}" -lt 3 ]; then
+            echo "Failed to parse Kudu credentials from publish profile."
+            exit 1
+          fi
+
+          KUDU_URL=$(printf '%s' "${PARSED_LINES[0]}" | base64 -d)
+          KUDU_USER=$(printf '%s' "${PARSED_LINES[1]}" | base64 -d)
+          KUDU_PASS=$(printf '%s' "${PARSED_LINES[2]}" | base64 -d)
+
+          if [ -z "$KUDU_URL" ] || [ -z "$KUDU_USER" ] || [ -z "$KUDU_PASS" ]; then
+            echo "Parsed Kudu credentials are empty."
+            exit 1
+          fi
 
           if [ ! -d publish ]; then
             echo "Publish output folder is missing."
