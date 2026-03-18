@@ -181,10 +181,54 @@ jobs:
 
             if [ "$STATUS_CODE" = "3" ]; then
               echo "Deployment failed. Fetching detailed logs..."
+              echo "Deployment status payload:"
+              echo "$STATUS_JSON"
+
               DEPLOY_ID=$(echo "$STATUS_JSON" | python3 -c 'import json,sys; d=json.load(sys.stdin); print(d.get("id", ""))')
+
               if [ -n "$DEPLOY_ID" ]; then
-                curl -sS -u "$KUDU_USER:$KUDU_PASS" "$KUDU_URL/api/deployments/$DEPLOY_ID/log" || true
+                echo "Deployment metadata ($DEPLOY_ID):"
+                curl -sS -u "$KUDU_USER:$KUDU_PASS" "$KUDU_URL/api/deployments/$DEPLOY_ID" || true
+
+                LOGS_JSON=$(curl -sS -u "$KUDU_USER:$KUDU_PASS" "$KUDU_URL/api/deployments/$DEPLOY_ID/log" || true)
+                echo "Top-level deployment logs:"
+                echo "$LOGS_JSON"
+
+                DETAIL_URLS=$(echo "$LOGS_JSON" | python3 - <<'PY'
+import json
+import sys
+
+raw = sys.stdin.read().strip()
+if not raw:
+    sys.exit(0)
+
+try:
+    data = json.loads(raw)
+except Exception:
+    sys.exit(0)
+
+if isinstance(data, dict):
+    data = [data]
+
+for item in data:
+    if isinstance(item, dict):
+        url = item.get('details_url', '')
+        if url:
+            print(url)
+PY
+)
+
+                if [ -n "$DETAIL_URLS" ]; then
+                  while IFS= read -r detail_url; do
+                    [ -z "$detail_url" ] && continue
+                    echo "Detail log: $detail_url"
+                    curl -sS -u "$KUDU_USER:$KUDU_PASS" "$detail_url" || true
+                  done <<< "$DETAIL_URLS"
+                fi
               else
+                echo "Deployment metadata (latest):"
+                curl -sS -u "$KUDU_USER:$KUDU_PASS" "$KUDU_URL/api/deployments/latest" || true
+                echo "Top-level deployment logs (latest):"
                 curl -sS -u "$KUDU_USER:$KUDU_PASS" "$KUDU_URL/api/deployments/latest/log" || true
               fi
               exit 1
