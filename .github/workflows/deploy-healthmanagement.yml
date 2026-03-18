@@ -105,9 +105,13 @@ jobs:
           echo "Zip package size: $(du -h site.zip | cut -f1)"
 
           echo "Submitting package to Kudu ZipDeploy..."
-          DEPLOY_RESPONSE=$(curl -sS -w "\nHTTP_STATUS:%{http_code}" -u "$KUDU_USER:$KUDU_PASS" -X POST -H "Content-Type: application/zip" --data-binary @site.zip "$KUDU_URL/api/zipdeploy?isAsync=true")
-          DEPLOY_HTTP=$(echo "$DEPLOY_RESPONSE" | sed -n 's/^HTTP_STATUS://p')
-          DEPLOY_BODY=$(echo "$DEPLOY_RESPONSE" | sed '/^HTTP_STATUS:/d')
+          if ! DEPLOY_RESPONSE=$(curl -sS -w "\nHTTP_STATUS:%{http_code}" -u "$KUDU_USER:$KUDU_PASS" -X POST -H "Content-Type: application/zip" --data-binary @site.zip "$KUDU_URL/api/zipdeploy?isAsync=true"); then
+            echo "ZipDeploy submit request failed (network/auth command error)."
+            exit 1
+          fi
+
+          DEPLOY_HTTP="${DEPLOY_RESPONSE##*$'\n'HTTP_STATUS:}"
+          DEPLOY_BODY="${DEPLOY_RESPONSE%$'\n'HTTP_STATUS:*}"
 
           echo "ZipDeploy submit HTTP=$DEPLOY_HTTP"
           if [ -z "$DEPLOY_HTTP" ] || [ "$DEPLOY_HTTP" -ge 400 ]; then
@@ -139,9 +143,13 @@ jobs:
 
           echo "Polling deployment status..."
           for i in {1..60}; do
-            STATUS_RESPONSE=$(curl -sS -w "\nHTTP_STATUS:%{http_code}" -u "$KUDU_USER:$KUDU_PASS" "$STATUS_URL")
-            STATUS_HTTP=$(echo "$STATUS_RESPONSE" | sed -n 's/^HTTP_STATUS://p')
-            STATUS_JSON=$(echo "$STATUS_RESPONSE" | sed '/^HTTP_STATUS:/d')
+            if ! STATUS_RESPONSE=$(curl -sS -w "\nHTTP_STATUS:%{http_code}" -u "$KUDU_USER:$KUDU_PASS" "$STATUS_URL"); then
+              echo "Failed to query deployment status due to curl command error."
+              exit 1
+            fi
+
+            STATUS_HTTP="${STATUS_RESPONSE##*$'\n'HTTP_STATUS:}"
+            STATUS_JSON="${STATUS_RESPONSE%$'\n'HTTP_STATUS:*}"
 
             if [ -z "$STATUS_HTTP" ] || [ "$STATUS_HTTP" -ge 400 ]; then
               echo "Failed to query deployment status. HTTP=$STATUS_HTTP"
