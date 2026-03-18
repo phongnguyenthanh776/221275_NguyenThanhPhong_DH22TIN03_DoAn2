@@ -194,7 +194,7 @@ jobs:
                 echo "Top-level deployment logs:"
                 echo "$LOGS_JSON"
 
-                DETAIL_URLS=$(python3 -c "import json,sys; raw=sys.stdin.read().strip(); d=[]; exec('try:\\n d=json.loads(raw) if raw else []\\nexcept Exception:\\n d=[]'); d=[d] if isinstance(d,dict) else d; [print(x.get('details_url','')) for x in d if isinstance(x,dict) and x.get('details_url','')]" <<< "$LOGS_JSON")
+                DETAIL_URLS=$(python3 -c "import json,sys; raw=sys.stdin.read().strip(); d=[]; exec('try:\\n d=json.loads(raw) if raw else []\\nexcept Exception:\\n d=[]'); d=[d] if isinstance(d,dict) else d; [print(x.get('details_url','')) for x in d if isinstance(x,dict) and x.get('details_url','')]" <<< "$LOGS_JSON" 2>/dev/null || true)
 
                 if [ -n "$DETAIL_URLS" ]; then
                   while IFS= read -r detail_url; do
