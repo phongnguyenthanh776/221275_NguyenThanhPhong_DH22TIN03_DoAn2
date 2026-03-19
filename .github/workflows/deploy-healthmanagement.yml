@@ -132,7 +132,7 @@ jobs:
           set ssl:verify-certificate no
           set net:max-retries 2
           set net:reconnect-interval-base 5
-          mirror -R --delete --verbose publish .
+          mirror -R --verbose publish .
           bye
           EOF
 
