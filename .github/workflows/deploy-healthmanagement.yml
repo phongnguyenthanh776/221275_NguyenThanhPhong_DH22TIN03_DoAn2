@@ -36,16 +36,22 @@ jobs:
       - name: Publish
         run: dotnet publish HealthManagement/HealthManagement.csproj --configuration Release --output publish --no-build
 
-      - name: Deploy to Azure Web App via Kudu ZipDeploy
+      - name: Deploy to Azure Web App via FTPS
         shell: bash
         env:
           PUBLISH_PROFILE: ${{ secrets.AZURE_WEBAPP_PUBLISH_PROFILE }}
         run: |
           set -euo pipefail
-          command -v zip >/dev/null 2>&1 || { echo "zip command is not available on runner"; exit 1; }
 
-          # Parse ZipDeploy credentials from publish profile XML.
-          PARSED_KUDU=$(python3 - <<'PY'
+          if [ ! -d publish ]; then
+            echo "Publish output folder is missing."
+            exit 1
+          fi
+
+          sudo apt-get update -y >/dev/null
+          sudo apt-get install -y lftp >/dev/null
+
+          PARSED_FTP=$(python3 - <<'PY'
           import base64
           import os
           import sys
@@ -62,158 +68,72 @@ jobs:
               print(f"Invalid publish profile XML: {exc}", file=sys.stderr)
               sys.exit(1)
 
-          zip_profile = None
+          ftp_profile = None
           for profile in root.findall('.//publishProfile'):
               method = profile.attrib.get('publishMethod', '').lower()
-              if method == 'zipdeploy':
-                  zip_profile = profile
+              name = profile.attrib.get('profileName', '').lower()
+              if method == 'ftp' and 'readonly' not in name:
+                  ftp_profile = profile
                   break
 
-          if zip_profile is None:
-              print("No ZipDeploy profile found in publish profile.", file=sys.stderr)
+          if ftp_profile is None:
+              print("No writable FTP profile found in publish profile.", file=sys.stderr)
               sys.exit(1)
 
-          publish_url = zip_profile.attrib.get('publishUrl', '').replace(':443', '')
-          username = zip_profile.attrib.get('userName', '')
-          password = zip_profile.attrib.get('userPWD', '')
+          publish_url = ftp_profile.attrib.get('publishUrl', '')
+          username = ftp_profile.attrib.get('userName', '')
+          password = ftp_profile.attrib.get('userPWD', '')
 
           if not publish_url or not username or not password:
-              print("ZipDeploy profile is missing publishUrl/userName/userPWD.", file=sys.stderr)
+              print("FTP profile missing publishUrl/userName/userPWD.", file=sys.stderr)
               sys.exit(1)
+
+          url = publish_url
+          for prefix in ('ftps://', 'ftp://'):
+              if url.startswith(prefix):
+                  url = url[len(prefix):]
+                  break
+
+          host, sep, path = url.partition('/')
+          if not host:
+              print("FTP host is empty.", file=sys.stderr)
+              sys.exit(1)
+          if not sep:
+              path = 'site/wwwroot'
 
           def b64(s: str) -> str:
               return base64.b64encode(s.encode('utf-8')).decode('ascii')
 
-          print(b64('https://' + publish_url))
+          print(b64(host))
+          print(b64(path))
           print(b64(username))
           print(b64(password))
-          print(f"ZipDeploy endpoint: https://{publish_url}", file=sys.stderr)
+          print(f"FTPS target: {host}/{path}", file=sys.stderr)
           PY
           )
 
-          readarray -t PARSED_LINES <<< "$PARSED_KUDU"
-          if [ "${#PARSED_LINES[@]}" -lt 3 ]; then
-            echo "Failed to parse Kudu credentials from publish profile."
+          readarray -t FTP_LINES <<< "$PARSED_FTP"
+          if [ "${#FTP_LINES[@]}" -lt 4 ]; then
+            echo "Failed to parse FTP credentials from publish profile."
             exit 1
           fi
 
-          KUDU_URL=$(printf '%s' "${PARSED_LINES[0]}" | base64 -d)
-          KUDU_USER=$(printf '%s' "${PARSED_LINES[1]}" | base64 -d)
-          KUDU_PASS=$(printf '%s' "${PARSED_LINES[2]}" | base64 -d)
+          FTP_HOST=$(printf '%s' "${FTP_LINES[0]}" | base64 -d)
+          FTP_PATH=$(printf '%s' "${FTP_LINES[1]}" | base64 -d)
+          FTP_USER=$(printf '%s' "${FTP_LINES[2]}" | base64 -d)
+          FTP_PASS=$(printf '%s' "${FTP_LINES[3]}" | base64 -d)
 
-          if [ -z "$KUDU_URL" ] || [ -z "$KUDU_USER" ] || [ -z "$KUDU_PASS" ]; then
-            echo "Parsed Kudu credentials are empty."
-            exit 1
-          fi
+          TARGET_PATH="/${FTP_PATH#/}"
+          echo "Deploying publish/ to ftps://${FTP_HOST}${TARGET_PATH}"
 
-          if [ ! -d publish ]; then
-            echo "Publish output folder is missing."
-            exit 1
-          fi
+          lftp -u "$FTP_USER","$FTP_PASS" "ftps://${FTP_HOST}" <<EOF
+          set ftp:ssl-force true
+          set ftp:ssl-protect-data true
+          set ssl:verify-certificate no
+          set net:max-retries 2
+          set net:reconnect-interval-base 5
+          mirror -R --delete --verbose publish ${TARGET_PATH}
+          bye
+          EOF
 
-          cd publish
-          zip -r ../site.zip . >/dev/null
-          cd ..
-
-          echo "Zip package size: $(du -h site.zip | cut -f1)"
-
-          echo "Submitting package to Kudu ZipDeploy..."
-          if ! DEPLOY_RESPONSE=$(curl -sS -w "\nHTTP_STATUS:%{http_code}" -u "$KUDU_USER:$KUDU_PASS" -X POST -H "Content-Type: application/zip" --data-binary @site.zip "$KUDU_URL/api/zipdeploy?isAsync=true"); then
-            echo "ZipDeploy submit request failed (network/auth command error)."
-            exit 1
-          fi
-
-          DEPLOY_HTTP="${DEPLOY_RESPONSE##*$'\n'HTTP_STATUS:}"
-          DEPLOY_BODY="${DEPLOY_RESPONSE%$'\n'HTTP_STATUS:*}"
-
-          echo "ZipDeploy submit HTTP=$DEPLOY_HTTP"
-          if [ -z "$DEPLOY_HTTP" ] || [ "$DEPLOY_HTTP" -ge 400 ]; then
-            echo "ZipDeploy submit failed. Response body:"
-            echo "$DEPLOY_BODY"
-            exit 1
-          fi
-
-          STATUS_URL=$(echo "$DEPLOY_BODY" | python3 - <<'PY'
-          import json
-          import sys
-
-          data = sys.stdin.read().strip()
-          if not data:
-              print("")
-              sys.exit(0)
-
-          try:
-              payload = json.loads(data)
-              print(payload.get("status_url", ""))
-          except Exception:
-              print("")
-          PY
-          )
-
-          if [ -z "$STATUS_URL" ]; then
-            STATUS_URL="$KUDU_URL/api/deployments/latest"
-          fi
-
-          echo "Polling deployment status..."
-          for i in {1..60}; do
-            if ! STATUS_RESPONSE=$(curl -sS -w "\nHTTP_STATUS:%{http_code}" -u "$KUDU_USER:$KUDU_PASS" "$STATUS_URL"); then
-              echo "Failed to query deployment status due to curl command error."
-              exit 1
-            fi
-
-            STATUS_HTTP="${STATUS_RESPONSE##*$'\n'HTTP_STATUS:}"
-            STATUS_JSON="${STATUS_RESPONSE%$'\n'HTTP_STATUS:*}"
-
-            if [ -z "$STATUS_HTTP" ] || [ "$STATUS_HTTP" -ge 400 ]; then
-              echo "Failed to query deployment status. HTTP=$STATUS_HTTP"
-              echo "$STATUS_JSON"
-              exit 1
-            fi
-
-            STATUS_CODE=$(echo "$STATUS_JSON" | python3 -c 'import json,sys; d=json.load(sys.stdin); print(d.get("status", -1))')
-            PROGRESS=$(echo "$STATUS_JSON" | python3 -c 'import json,sys; d=json.load(sys.stdin); print(d.get("progress", ""))')
-            echo "status=$STATUS_CODE progress=$PROGRESS"
-
-            if [ "$STATUS_CODE" = "4" ]; then
-              echo "Deployment succeeded."
-              exit 0
-            fi
-
-            if [ "$STATUS_CODE" = "3" ]; then
-              echo "Deployment failed. Fetching detailed logs..."
-              echo "Deployment status payload:"
-              echo "$STATUS_JSON"
-
-              DEPLOY_ID=$(echo "$STATUS_JSON" | python3 -c 'import json,sys; d=json.load(sys.stdin); print(d.get("id", ""))')
-
-              if [ -n "$DEPLOY_ID" ]; then
-                echo "Deployment metadata ($DEPLOY_ID):"
-                curl -sS -u "$KUDU_USER:$KUDU_PASS" "$KUDU_URL/api/deployments/$DEPLOY_ID" || true
-
-                LOGS_JSON=$(curl -sS -u "$KUDU_USER:$KUDU_PASS" "$KUDU_URL/api/deployments/$DEPLOY_ID/log" || true)
-                echo "Top-level deployment logs:"
-                echo "$LOGS_JSON"
-
-                DETAIL_URLS=$(python3 -c "import json,sys; raw=sys.stdin.read().strip(); d=[]; exec('try:\\n d=json.loads(raw) if raw else []\\nexcept Exception:\\n d=[]'); d=[d] if isinstance(d,dict) else d; [print(x.get('details_url','')) for x in d if isinstance(x,dict) and x.get('details_url','')]" <<< "$LOGS_JSON" 2>/dev/null || true)
-
-                if [ -n "$DETAIL_URLS" ]; then
-                  while IFS= read -r detail_url; do
-                    [ -z "$detail_url" ] && continue
-                    echo "Detail log: $detail_url"
-                    curl -sS -u "$KUDU_USER:$KUDU_PASS" "$detail_url" || true
-                  done <<< "$DETAIL_URLS"
-                fi
-              else
-                echo "Deployment metadata (latest):"
-                curl -sS -u "$KUDU_USER:$KUDU_PASS" "$KUDU_URL/api/deployments/latest" || true
-                echo "Top-level deployment logs (latest):"
-                curl -sS -u "$KUDU_USER:$KUDU_PASS" "$KUDU_URL/api/deployments/latest/log" || true
-              fi
-              exit 1
-            fi
-
-            sleep 10
-          done
-
-          echo "Deployment timed out while waiting for completion."
-          exit 1
+          echo "FTPS deployment completed."
