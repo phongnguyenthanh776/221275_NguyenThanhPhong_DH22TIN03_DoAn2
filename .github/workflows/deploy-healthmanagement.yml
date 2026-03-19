@@ -123,16 +123,16 @@ jobs:
           FTP_USER=$(printf '%s' "${FTP_LINES[2]}" | base64 -d)
           FTP_PASS=$(printf '%s' "${FTP_LINES[3]}" | base64 -d)
 
-          TARGET_PATH="/${FTP_PATH#/}"
-          echo "Deploying publish/ to ftps://${FTP_HOST}${TARGET_PATH}"
+          FTP_TARGET_URL="ftps://${FTP_HOST}/${FTP_PATH#/}"
+          echo "Deploying publish/ to ${FTP_TARGET_URL}"
 
-          lftp -u "$FTP_USER","$FTP_PASS" "ftps://${FTP_HOST}" <<EOF
+          lftp -u "$FTP_USER","$FTP_PASS" "$FTP_TARGET_URL" <<EOF
           set ftp:ssl-force true
           set ftp:ssl-protect-data true
           set ssl:verify-certificate no
           set net:max-retries 2
           set net:reconnect-interval-base 5
-          mirror -R --delete --verbose publish ${TARGET_PATH}
+          mirror -R --delete --verbose publish .
           bye
           EOF
 
