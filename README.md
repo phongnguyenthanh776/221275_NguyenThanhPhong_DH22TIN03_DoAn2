@@ -1,5 +1,11 @@
 # Health Management System
 
+**🔗 Liên kết Hệ thống Online (Đã triển khai trên Azure)**
+- **Website Frontend (C# ASP.NET Core):** [https://healthmanagement20260319115218.azurewebsites.net](https://healthmanagement20260319115218.azurewebsites.net)
+- **AI Backend API (Python Flask):** [https://healthmanagementai2026.azurewebsites.net](https://healthmanagementai2026.azurewebsites.net)
+
+---
+
 ## Thông tin dự án
 
 - Sinh viên: Nguyễn Thanh Phong

@@ -24,9 +24,9 @@ pillow>=10.0.0
 # Optional: Deep Learning (install manually if your Python version supports it)
 # tensorflow>=2.13.0
 
-# PyTorch image pipeline
-torch>=2.7.0
-torchvision>=0.22.0
+# PyTorch image pipeline (Bị xóa để cài bản CPU nhẹ 170MB trên mây Azure)
+# torch>=2.2.0
+# torchvision>=0.17.0
 
 # Optional: Kaggle API
 kaggle>=1.5.0
