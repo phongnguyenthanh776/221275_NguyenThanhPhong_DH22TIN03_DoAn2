@@ -1,23 +1,23 @@
 ﻿# Health Management System
 
-**ðŸ”— LiÃªn káº¿t Há»‡ thá»‘ng Online (ÄÃ£ triá»ƒn khai trÃªn Azure)**
+**🔗 Liên kết Hệ thống Online (Đã triển khai trên Azure)**
 - **Website Frontend (C# ASP.NET Core):** [https://healthmgmt-221275-web.azurewebsites.net](https://healthmgmt-221275-web.azurewebsites.net)
 - **AI Backend API (Python Flask):** [https://healthmgmt-221275-ai-final.azurewebsites.net](https://healthmgmt-221275-ai-final.azurewebsites.net)
 
 ---
 
-## ThÃ´ng tin dá»± Ã¡n
+## Thông tin dự án
 
-- Sinh viÃªn: Nguyá»…n Thanh Phong
+- Sinh viên: Nguyễn Thanh Phong
 - MSSV: 221275
-- Lá»›p: DH22TIN03
-- MÃ´n: Äá»“ Ã¡n 2
+- Lớp: DH22TIN03
+- Môn: Đồ án 2
 
-## Tá»•ng quan
+## Tổng quan
 
-Health Management System lÃ  á»©ng dá»¥ng web quáº£n lÃ½ sá»©c khá»e cÃ¡ nhÃ¢n, phÃ¡t triá»ƒn báº±ng ASP.NET Core MVC vÃ  tÃ­ch há»£p AI qua Flask API. Há»‡ thá»‘ng há»— trá»£ theo dÃµi dá»¯ liá»‡u sá»©c khá»e, phÃ¢n tÃ­ch xu hÆ°á»›ng, nháº¯c viá»‡c qua email vÃ  dá»± Ä‘oÃ¡n nguy cÆ¡ bá»‡nh tá»« cáº£ dá»¯ liá»‡u chá»‰ sá»‘ láº«n áº£nh y táº¿.
+Health Management System là ứng dụng web quản lý sức khỏe cá nhân, phát triển bằng ASP.NET Core MVC và tích hợp AI qua Flask API. Hệ thống hỗ trợ theo dõi dữ liệu sức khỏe, phân tích xu hướng, nhắc việc qua email và dự đoán nguy cơ bệnh từ cả dữ liệu chỉ số lẫn ảnh y tế.
 
-## CÃ´ng nghá»‡ sá»­ dá»¥ng
+## Công nghệ sử dụng
 
 - ASP.NET Core MVC (.NET 8)
 - Entity Framework Core (Code First)
@@ -25,12 +25,12 @@ Health Management System lÃ  á»©ng dá»¥ng web quáº£n lÃ½ sá»©c k
 - ASP.NET Identity
 - Bootstrap 5, Chart.js
 - Python Flask cho AI API
-- scikit-learn / XGBoost / LightGBM cho mÃ´ hÃ¬nh tabular
-- PyTorch (ResNet-18) cho mÃ´ hÃ¬nh áº£nh
+- scikit-learn / XGBoost / LightGBM cho mô hình tabular
+- PyTorch (ResNet-18) cho mô hình ảnh
 
-## CÆ¡ sá»Ÿ dá»¯ liá»‡u
+## Cơ sở dữ liệu
 
-Há»‡ thá»‘ng dÃ¹ng 12 báº£ng nghiá»‡p vá»¥ chÃ­nh:
+Hệ thống dùng 12 bảng nghiệp vụ chính:
 
 1. VaiTro
 2. NguoiDung
@@ -45,76 +45,76 @@ Há»‡ thá»‘ng dÃ¹ng 12 báº£ng nghiá»‡p vá»¥ chÃ­nh:
 11. LichUongThuoc
 12. TinTucSucKhoe
 
-LÆ°u Ã½: CÃ¡c báº£ng Identity (AspNetUsers, AspNetRoles, ...) Ä‘Æ°á»£c quáº£n lÃ½ riÃªng bá»Ÿi ASP.NET Identity.
+Lưu ý: Các bảng Identity (AspNetUsers, AspNetRoles, ...) được quản lý riêng bởi ASP.NET Identity.
 
-## Chá»©c nÄƒng chÃ­nh
+## Chức năng chính
 
-### NgÆ°á»i dÃ¹ng
+### Người dùng
 
-- ÄÄƒng kÃ½, Ä‘Äƒng nháº­p, quÃªn máº­t kháº©u, Ä‘áº·t láº¡i máº­t kháº©u
-- Quáº£n lÃ½ tÃ i khoáº£n cÃ¡ nhÃ¢n (há» tÃªn, email, sá»‘ Ä‘iá»‡n thoáº¡i, Ä‘á»•i máº­t kháº©u)
-- Dashboard tá»•ng quan sá»©c khá»e
-- Há»“ sÆ¡ sá»©c khá»e vÃ  nháº­p chá»‰ sá»‘ Ä‘á»‹nh ká»³
-- TÃ­nh BMI, xem lá»‹ch sá»­ BMI
-- Dá»± Ä‘oÃ¡n AI cho 6 bá»‡nh vÃ  xem lá»‹ch sá»­ dá»± Ä‘oÃ¡n
-- Theo dÃµi giáº¥c ngá»§
-- Theo dÃµi uá»‘ng nÆ°á»›c vÃ  nháº¯c uá»‘ng nÆ°á»›c
-- Quáº£n lÃ½ thuá»‘c vÃ  lá»‹ch uá»‘ng thuá»‘c
-- Dashboard phÃ¢n tÃ­ch xu hÆ°á»›ng + bÃ¡o cÃ¡o tuáº§n
+- Đăng ký, đăng nhập, quên mật khẩu, đặt lại mật khẩu
+- Quản lý tài khoản cá nhân (họ tên, email, số điện thoại, đổi mật khẩu)
+- Dashboard tổng quan sức khỏe
+- Hồ sơ sức khỏe và nhập chỉ số định kỳ
+- Tính BMI, xem lịch sử BMI
+- Dự đoán AI cho 6 bệnh và xem lịch sử dự đoán
+- Theo dõi giấc ngủ
+- Theo dõi uống nước và nhắc uống nước
+- Quản lý thuốc và lịch uống thuốc
+- Dashboard phân tích xu hướng + báo cáo tuần
 
-### Quáº£n trá»‹ viÃªn
+### Quản trị viên
 
-- Dashboard quáº£n trá»‹
-- Quáº£n lÃ½ ngÆ°á»i dÃ¹ng (vÃ´ hiá»‡u hÃ³a/kÃ­ch hoáº¡t)
-- Quáº£n lÃ½ tin tá»©c sá»©c khá»e (táº¡o, sá»­a, xÃ³a, thá»© tá»± hiá»ƒn thá»‹)
+- Dashboard quản trị
+- Quản lý người dùng (vô hiệu hóa/kích hoạt)
+- Quản lý tin tức sức khỏe (tạo, sửa, xóa, thứ tự hiển thị)
 
-## AI hiá»‡n táº¡i
+## AI hiện tại
 
-Há»‡ thá»‘ng há»— trá»£ 6 bá»‡nh:
+Hệ thống hỗ trợ 6 bệnh:
 
-### Dá»¯ liá»‡u tabular (4 bá»‡nh)
+### Dữ liệu tabular (4 bệnh)
 
 - Heart Disease
 - Diabetes
 - Hypertension
 - Stroke
 
-Äáº·c Ä‘iá»ƒm pipeline:
+Đặc điểm pipeline:
 
-- So sÃ¡nh Ä‘a mÃ´ hÃ¬nh (Logistic Regression, Random Forest, Gradient Boosting, XGBoost, LightGBM)
-- Xá»­ lÃ½ máº¥t cÃ¢n báº±ng dá»¯ liá»‡u (SMOTE/biáº¿n thá»ƒ theo tá»«ng bÃ i toÃ¡n)
-- Hiá»‡u chá»‰nh xÃ¡c suáº¥t
-- Tá»‘i Æ°u ngÆ°á»¡ng quyáº¿t Ä‘á»‹nh thay vÃ¬ cá»‘ Ä‘á»‹nh 0.5
+- So sánh đa mô hình (Logistic Regression, Random Forest, Gradient Boosting, XGBoost, LightGBM)
+- Xử lý mất cân bằng dữ liệu (SMOTE/biến thể theo từng bài toán)
+- Hiệu chỉnh xác suất
+- Tối ưu ngưỡng quyết định thay vì cố định 0.5
 
-### Dá»¯ liá»‡u áº£nh (2 bá»‡nh)
+### Dữ liệu ảnh (2 bệnh)
 
-- Kidney Stone (áº£nh CT)
-- Pneumonia (áº£nh X-quang)
+- Kidney Stone (ảnh CT)
+- Pneumonia (ảnh X-quang)
 
-Äáº·c Ä‘iá»ƒm pipeline:
+Đặc điểm pipeline:
 
 - ResNet-18 pretrained (PyTorch)
-- Tráº£ vá» xÃ¡c suáº¥t, nhÃ£n dá»± Ä‘oÃ¡n, ngÆ°á»¡ng quyáº¿t Ä‘á»‹nh
-- Tráº£ vá» áº£nh gá»‘c + áº£nh chÃº thÃ­ch Grad-CAM
+- Trả về xác suất, nhãn dự đoán, ngưỡng quyết định
+- Trả về ảnh gốc + ảnh chú thích Grad-CAM
 
-LÆ°u Ã½ ká»¹ thuáº­t:
+Lưu ý kỹ thuật:
 
-- Lá»‹ch sá»­ dá»± Ä‘oÃ¡n áº£nh lÆ°u metadata JSON trong trÆ°á»ng `DuLieuDauVao`
-- áº¢nh dá»± Ä‘oÃ¡n Ä‘Æ°á»£c lÆ°u táº¡i `wwwroot/uploads/predictions/...`
+- Lịch sử dự đoán ảnh lưu metadata JSON trong trường `DuLieuDauVao`
+- Ảnh dự đoán được lưu tại `wwwroot/uploads/predictions/...`
 
-## HÆ°á»›ng dáº«n cháº¡y
+## Hướng dẫn chạy
 
-### 1. YÃªu cáº§u
+### 1. Yêu cầu
 
 - .NET SDK 8
 - SQL Server
 - Python 3.9+
 
-### 2. Cáº¥u hÃ¬nh á»©ng dá»¥ng web
+### 2. Cấu hình ứng dụng web
 
-- Má»Ÿ `HealthManagement/appsettings.json`
-- Kiá»ƒm tra `ConnectionStrings:DefaultConnection`
-- Kiá»ƒm tra `AISettings`:
+- Mở `HealthManagement/appsettings.json`
+- Kiểm tra `ConnectionStrings:DefaultConnection`
+- Kiểm tra `AISettings`:
 
 ```json
 "AISettings": {
@@ -124,13 +124,13 @@ LÆ°u Ã½ ká»¹ thuáº­t:
 }
 ```
 
-### 3. Cáº­p nháº­t cÆ¡ sá»Ÿ dá»¯ liá»‡u
+### 3. Cập nhật cơ sở dữ liệu
 
 ```bash
 dotnet ef database update --project HealthManagement/HealthManagement.csproj
 ```
 
-### 4. CÃ i mÃ´i trÆ°á»ng AI (náº¿u cáº§n cháº¡y Flask)
+### 4. Cài môi trường AI (nếu cần chạy Flask)
 
 ```bash
 python -m venv .venv
@@ -138,28 +138,28 @@ python -m venv .venv
 pip install -r AIModel/requirements.txt
 ```
 
-### 5. Cháº¡y Flask AI API
+### 5. Chạy Flask AI API
 
 ```bash
 cd AIModel
 python flask_api.py
 ```
 
-Kiá»ƒm tra health endpoint:
+Kiểm tra health endpoint:
 
 ```bash
 GET http://localhost:5000/health
 ```
 
-### 6. Cháº¡y á»©ng dá»¥ng ASP.NET Core
+### 6. Chạy ứng dụng ASP.NET Core
 
 ```bash
 dotnet run --project HealthManagement/HealthManagement.csproj
 ```
 
-Máº·c Ä‘á»‹nh truy cáº­p táº¡i: `https://localhost:5001` hoáº·c URL do terminal cung cáº¥p.
+Mặc định truy cập tại: `https://localhost:5001` hoặc URL do terminal cung cấp.
 
-### 7. Cáº¥u hÃ¬nh email nháº¯c viá»‡c (tÃ¹y chá»n)
+### 7. Cấu hình email nhắc việc (tùy chọn)
 
 Trong `HealthManagement/appsettings.json`:
 
@@ -175,17 +175,18 @@ Trong `HealthManagement/appsettings.json`:
 }
 ```
 
-## TÃ i liá»‡u AI chi tiáº¿t
+## Tài liệu AI chi tiết
 
-Xem thÃªm: `AIModel/README_AI.md`
+Xem thêm: `AIModel/README_AI.md`
 
-## LÆ°u Ã½
+## Lưu ý
 
-- ÄÃ¢y lÃ  cÃ´ng cá»¥ há»— trá»£ theo dÃµi sá»©c khá»e, khÃ´ng thay tháº¿ cháº©n Ä‘oÃ¡n chuyÃªn mÃ´n.
-- Náº¿u test quÃªn máº­t kháº©u hoáº·c nháº¯c viá»‡c email, cáº§n kiá»ƒm tra cáº£ há»™p thÆ° Spam/Quáº£ng cÃ¡o.
+- Đây là công cụ hỗ trợ theo dõi sức khỏe, không thay thế chẩn đoán chuyên môn.
+- Nếu test quên mật khẩu hoặc nhắc việc email, cần kiểm tra cả hộp thư Spam/Quảng cáo.
 
-## LiÃªn há»‡
+## Liên hệ
 
 - Email: phong221275@student.nctu.edu.vn
+
 
 
