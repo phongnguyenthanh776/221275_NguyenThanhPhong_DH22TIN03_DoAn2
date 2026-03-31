@@ -1,8 +1,9 @@
-# Health Management System
+﻿# Health Management System
 
 **🔗 Liên kết Hệ thống Online (Đã triển khai trên Azure)**
 - **Website Frontend (C# ASP.NET Core):** [https://healthmgmt-221275-web.azurewebsites.net](https://healthmgmt-221275-web.azurewebsites.net)
 - **AI Backend API (Python Flask):** [https://healthmgmt-221275-ai-final.azurewebsites.net](https://healthmgmt-221275-ai-final.azurewebsites.net)
+<<<<<<< HEAD
 
 **🔑 Tài khoản Admin (để kiểm thử hệ thống online)**
 
@@ -10,6 +11,8 @@
 |--------|---------|
 | Email | phongwary2004@gmail.com |
 | Mật khẩu | Admin123 |
+=======
+>>>>>>> origin/main
 
 ---
 
@@ -194,3 +197,6 @@ Xem thêm: `AIModel/README_AI.md`
 ## Liên hệ
 
 - Email: phong221275@student.nctu.edu.vn
+
+
+
