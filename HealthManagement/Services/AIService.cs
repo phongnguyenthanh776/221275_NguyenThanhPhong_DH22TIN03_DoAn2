@@ -1,4 +1,5 @@
 using HealthManagement.Models;
+using Microsoft.AspNetCore.Hosting;
 using System.Diagnostics;
 using System.ComponentModel;
 using System.Net.Http.Headers;
@@ -28,16 +29,24 @@ namespace HealthManagement.Services
         private static readonly SemaphoreSlim FlaskStartupLock = new(1, 1);
         private static DateTime _lastFlaskStartupAttemptUtc = DateTime.MinValue;
         private static Process? _flaskProcess;
+        private static readonly object FlaskDiagnosticsLock = new();
+        private static string? _lastFlaskStartupFailure;
 
         private readonly IConfiguration _configuration;
         private readonly HttpClient _httpClient;
         private readonly ILogger<AIService> _logger;
+        private readonly IWebHostEnvironment _hostEnvironment;
 
-        public AIService(IConfiguration configuration, HttpClient httpClient, ILogger<AIService> logger)
+        public AIService(
+            IConfiguration configuration,
+            HttpClient httpClient,
+            ILogger<AIService> logger,
+            IWebHostEnvironment hostEnvironment)
         {
             _configuration = configuration;
             _httpClient = httpClient;
             _logger = logger;
+            _hostEnvironment = hostEnvironment;
         }
 
         // ============================================================
@@ -311,6 +320,11 @@ namespace HealthManagement.Services
                 var started = await TryStartFlaskApiAsync(apiUrl);
                 if (!started)
                 {
+                    var diagnostic = GetLastFlaskStartupFailure();
+                    if (!string.IsNullOrWhiteSpace(diagnostic))
+                    {
+                        _logger.LogWarning("⚠️ Flask auto-start failed: {Diagnostic}", diagnostic);
+                    }
                     throw;
                 }
 
@@ -348,6 +362,11 @@ namespace HealthManagement.Services
                 var started = await TryStartFlaskApiAsync(apiUrl);
                 if (!started)
                 {
+                    var diagnostic = GetLastFlaskStartupFailure();
+                    if (!string.IsNullOrWhiteSpace(diagnostic))
+                    {
+                        _logger.LogWarning("⚠️ Flask image auto-start failed: {Diagnostic}", diagnostic);
+                    }
                     throw;
                 }
 
@@ -385,6 +404,7 @@ namespace HealthManagement.Services
             var healthUrl = BuildHealthUrl(apiUrl);
             if (await IsFlaskHealthyAsync(healthUrl))
             {
+                ClearLastFlaskStartupFailure();
                 return true;
             }
 
@@ -393,6 +413,7 @@ namespace HealthManagement.Services
             {
                 if (await IsFlaskHealthyAsync(healthUrl))
                 {
+                    ClearLastFlaskStartupFailure();
                     return true;
                 }
 
@@ -408,6 +429,7 @@ namespace HealthManagement.Services
                     if (!File.Exists(flaskScriptPath))
                     {
                         _logger.LogWarning("⚠️ Flask script not found: {FlaskScriptPath}", flaskScriptPath);
+                        SetLastFlaskStartupFailure($"Khong tim thay file flask_api.py tai: {flaskScriptPath}");
                         return false;
                     }
 
@@ -416,24 +438,23 @@ namespace HealthManagement.Services
                     // Kill any stale process occupying the Flask port before starting fresh
                     KillProcessOnPort(apiUrl);
 
-                    _logger.LogInformation("🚀 Starting Flask API using {PythonExecutable}", pythonExecutable);
-
-                    var processStartInfo = new ProcessStartInfo
-                    {
-                        FileName = pythonExecutable,
-                        Arguments = $"\"{flaskScriptPath}\"",
-                        WorkingDirectory = Path.GetDirectoryName(flaskScriptPath)!,
-                        UseShellExecute = false,
-                        CreateNoWindow = true,
-                        RedirectStandardOutput = true,
-                        RedirectStandardError = true
-                    };
-                    processStartInfo.Environment["PYTHONIOENCODING"] = "utf-8";
-
-                    _flaskProcess = Process.Start(processStartInfo);
+                    _flaskProcess = StartFlaskProcess(pythonExecutable, flaskScriptPath);
                     if (_flaskProcess == null)
                     {
-                        _logger.LogWarning("⚠️ Failed to start Flask API process");
+                        foreach (var fallbackExecutable in GetPythonStartFallbacks(pythonExecutable))
+                        {
+                            _flaskProcess = StartFlaskProcess(fallbackExecutable, flaskScriptPath);
+                            if (_flaskProcess != null)
+                            {
+                                break;
+                            }
+                        }
+                    }
+
+                    if (_flaskProcess == null)
+                    {
+                        _logger.LogWarning("⚠️ Failed to start Flask API process with all Python candidates");
+                        SetLastFlaskStartupFailure("Khong the khoi dong Python de chay Flask API. Kiem tra Python/venv va quyen truy cap file.");
                         return false;
                     }
 
@@ -459,6 +480,7 @@ namespace HealthManagement.Services
             catch (Exception ex)
             {
                 _logger.LogError(ex, "❌ Failed to auto-start Flask API");
+                SetLastFlaskStartupFailure($"Loi khi khoi dong Flask API: {ex.Message}");
                 return false;
             }
             finally
@@ -466,13 +488,14 @@ namespace HealthManagement.Services
                 FlaskStartupLock.Release();
             }
 
-            var startupWaitSeconds = Math.Max(3, _configuration.GetValue<int>("AISettings:StartupWaitSeconds", 15));
+            var startupWaitSeconds = Math.Max(10, _configuration.GetValue<int>("AISettings:StartupWaitSeconds", 60));
             var timeoutAt = DateTime.UtcNow.AddSeconds(startupWaitSeconds);
 
             while (DateTime.UtcNow < timeoutAt)
             {
                 if (await IsFlaskHealthyAsync(healthUrl))
                 {
+                    ClearLastFlaskStartupFailure();
                     return true;
                 }
 
@@ -480,6 +503,14 @@ namespace HealthManagement.Services
             }
 
             _logger.LogWarning("⚠️ Flask API did not become healthy after {Seconds}s", startupWaitSeconds);
+            if (_flaskProcess?.HasExited == true)
+            {
+                SetLastFlaskStartupFailure($"Flask da thoat som voi ma loi {_flaskProcess.ExitCode}. Kiem tra dependency Python trong AIModel.");
+            }
+            else
+            {
+                SetLastFlaskStartupFailure($"Flask khong san sang sau {startupWaitSeconds}s. Thu tang AISettings:StartupWaitSeconds.");
+            }
             return false;
         }
 
@@ -494,6 +525,98 @@ namespace HealthManagement.Services
             catch
             {
                 return false;
+            }
+        }
+
+        private Process? StartFlaskProcess(string pythonExecutable, string flaskScriptPath)
+        {
+            try
+            {
+                _logger.LogInformation("🚀 Starting Flask API using {PythonExecutable}", pythonExecutable);
+
+                var processStartInfo = new ProcessStartInfo
+                {
+                    FileName = pythonExecutable,
+                    Arguments = BuildFlaskStartArguments(pythonExecutable, flaskScriptPath),
+                    WorkingDirectory = Path.GetDirectoryName(flaskScriptPath)!,
+                    UseShellExecute = false,
+                    CreateNoWindow = true,
+                    RedirectStandardOutput = true,
+                    RedirectStandardError = true
+                };
+
+                return Process.Start(processStartInfo);
+            }
+            catch (Win32Exception win32Ex)
+            {
+                _logger.LogWarning(win32Ex, "⚠️ Failed to start Flask API with {PythonExecutable}. Win32 error code: {ErrorCode}", pythonExecutable, win32Ex.NativeErrorCode);
+                SetLastFlaskStartupFailure($"Khong the chay {pythonExecutable}. Win32={win32Ex.NativeErrorCode}.");
+                return null;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(ex, "⚠️ Failed to start Flask API with {PythonExecutable}", pythonExecutable);
+                SetLastFlaskStartupFailure($"Khong the chay {pythonExecutable}: {ex.Message}");
+                return null;
+            }
+        }
+
+        private static string BuildFlaskStartArguments(string pythonExecutable, string flaskScriptPath)
+        {
+            var executableName = Path.GetFileNameWithoutExtension(pythonExecutable);
+            if (string.Equals(executableName, "py", StringComparison.OrdinalIgnoreCase))
+            {
+                return $"-3 -X utf8 \"{flaskScriptPath}\"";
+            }
+
+            return $"-X utf8 \"{flaskScriptPath}\"";
+        }
+
+        private IEnumerable<string> GetPythonStartFallbacks(string primaryExecutable)
+        {
+            var seen = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
+            {
+                primaryExecutable
+            };
+
+            foreach (var candidate in GetPythonExecutableCandidates())
+            {
+                if (seen.Add(candidate))
+                {
+                    yield return candidate;
+                }
+            }
+
+            foreach (var fallback in new[] { "py", "python" })
+            {
+                if (seen.Add(fallback))
+                {
+                    yield return fallback;
+                }
+            }
+        }
+
+        private static void SetLastFlaskStartupFailure(string message)
+        {
+            lock (FlaskDiagnosticsLock)
+            {
+                _lastFlaskStartupFailure = message;
+            }
+        }
+
+        private static void ClearLastFlaskStartupFailure()
+        {
+            lock (FlaskDiagnosticsLock)
+            {
+                _lastFlaskStartupFailure = null;
+            }
+        }
+
+        private static string? GetLastFlaskStartupFailure()
+        {
+            lock (FlaskDiagnosticsLock)
+            {
+                return _lastFlaskStartupFailure;
             }
         }
 
@@ -585,7 +708,16 @@ namespace HealthManagement.Services
                 return scriptPath;
             }
 
-            return Path.GetFullPath(Path.Combine(Directory.GetCurrentDirectory(), scriptPath));
+            foreach (var root in GetPathResolutionRoots())
+            {
+                var resolvedPath = Path.GetFullPath(Path.Combine(root, scriptPath));
+                if (File.Exists(resolvedPath))
+                {
+                    return resolvedPath;
+                }
+            }
+
+            return Path.GetFullPath(Path.Combine(_hostEnvironment.ContentRootPath, scriptPath));
         }
 
         private string ResolveImageApiUrl()
@@ -640,13 +772,14 @@ namespace HealthManagement.Services
                 }
             }
 
-            _logger.LogWarning("⚠️ Could not find a runnable Python executable. Falling back to `python` from PATH.");
-            return "python";
+            _logger.LogWarning("⚠️ Could not find a runnable Python executable. Falling back to `py` launcher.");
+            return "py";
         }
 
         private IEnumerable<string> GetPythonExecutableCandidates()
         {
             var seen = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+            var roots = GetPathResolutionRoots().ToArray();
 
             var configured = _configuration["AISettings:PythonExecutable"];
             if (!string.IsNullOrWhiteSpace(configured))
@@ -657,8 +790,11 @@ namespace HealthManagement.Services
                 }
                 else if (configured.Contains(Path.DirectorySeparatorChar) || configured.Contains(Path.AltDirectorySeparatorChar))
                 {
-                    var resolvedConfigured = Path.GetFullPath(Path.Combine(Directory.GetCurrentDirectory(), configured));
-                    foreach (var item in AddCandidate(resolvedConfigured)) yield return item;
+                    foreach (var root in roots)
+                    {
+                        var resolvedConfigured = Path.GetFullPath(Path.Combine(root, configured));
+                        foreach (var item in AddCandidate(resolvedConfigured)) yield return item;
+                    }
                 }
                 else
                 {
@@ -666,17 +802,31 @@ namespace HealthManagement.Services
                 }
             }
 
-            var defaults = new[]
+            foreach (var root in roots)
             {
-                Path.GetFullPath(Path.Combine(Directory.GetCurrentDirectory(), "..", ".venv", "Scripts", "python.exe")),
-                Path.GetFullPath(Path.Combine(Directory.GetCurrentDirectory(), ".venv", "Scripts", "python.exe")),
-                Path.GetFullPath(Path.Combine(Directory.GetCurrentDirectory(), "..", "AIModel", "venv", "Scripts", "python.exe")),
-                "python"
-            };
+                var defaults = new[]
+                {
+                    Path.GetFullPath(Path.Combine(root, "..", ".venv", "Scripts", "python.exe")),
+                    Path.GetFullPath(Path.Combine(root, ".venv", "Scripts", "python.exe")),
+                    Path.GetFullPath(Path.Combine(root, "..", "AIModel", "venv", "Scripts", "python.exe")),
+                    Path.GetFullPath(Path.Combine(root, "..", "AIModel", ".venv", "Scripts", "python.exe"))
+                };
 
-            foreach (var candidate in defaults)
+                foreach (var candidate in defaults)
+                {
+                    foreach (var item in AddCandidate(candidate)) yield return item;
+                }
+            }
+
+            var envPython = Environment.GetEnvironmentVariable("PYTHON");
+            if (!string.IsNullOrWhiteSpace(envPython))
             {
-                foreach (var item in AddCandidate(candidate)) yield return item;
+                foreach (var item in AddCandidate(envPython)) yield return item;
+            }
+
+            foreach (var fallback in new[] { "py", "python" })
+            {
+                foreach (var item in AddCandidate(fallback)) yield return item;
             }
 
             IEnumerable<string> AddCandidate(string? value)
@@ -689,6 +839,25 @@ namespace HealthManagement.Services
                 if (seen.Add(value))
                 {
                     yield return value;
+                }
+            }
+        }
+
+        private IEnumerable<string> GetPathResolutionRoots()
+        {
+            var seen = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+
+            foreach (var candidate in new[] { _hostEnvironment.ContentRootPath, Directory.GetCurrentDirectory(), AppContext.BaseDirectory })
+            {
+                if (string.IsNullOrWhiteSpace(candidate))
+                {
+                    continue;
+                }
+
+                var fullPath = Path.GetFullPath(candidate);
+                if (seen.Add(fullPath))
+                {
+                    yield return fullPath;
                 }
             }
         }
@@ -883,7 +1052,12 @@ namespace HealthManagement.Services
                 DiseaseType.Pneumonia => "Viêm Phổi",
                 _ => "Bệnh"
             };
-            
+
+            var diagnostic = GetLastFlaskStartupFailure();
+            var technicalNote = string.IsNullOrWhiteSpace(diagnostic)
+                ? string.Empty
+                : $" Chi tiết kỹ thuật: {diagnostic}";
+
             return new PredictionResponse
             {
                 DiseaseType = diseaseType.ToString(),
@@ -891,7 +1065,7 @@ namespace HealthManagement.Services
                 RiskLevel = 0,
                 Recommendation = string.Empty,
                 Details = isError
-                    ? $"Không thể kết nối AI backend cho {diseaseName}. Vui lòng chạy AIModel/flask_api.py hoặc kiểm tra service AI rồi thử lại."
+                    ? $"Không thể kết nối AI backend cho {diseaseName}. Vui lòng chạy AIModel/flask_api.py hoặc kiểm tra service AI rồi thử lại.{technicalNote}"
                     : $"AI đang tắt, không thể đánh giá nguy cơ {diseaseName} lúc này."
             };
         }
