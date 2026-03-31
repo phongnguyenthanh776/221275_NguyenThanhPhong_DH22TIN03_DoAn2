@@ -1,8 +1,15 @@
 # Health Management System
 
 **🔗 Liên kết Hệ thống Online (Đã triển khai trên Azure)**
-- **Website Frontend (C# ASP.NET Core):** [https://healthmanagement20260319115218.azurewebsites.net](https://healthmanagement20260319115218.azurewebsites.net)
-- **AI Backend API (Python Flask):** [https://healthmanagementai2026.azurewebsites.net](https://healthmanagementai2026.azurewebsites.net)
+- **Website Frontend (C# ASP.NET Core):** [https://healthmgmt-221275-web.azurewebsites.net](https://healthmgmt-221275-web.azurewebsites.net)
+- **AI Backend API (Python Flask):** [https://healthmgmt-221275-ai-final.azurewebsites.net](https://healthmgmt-221275-ai-final.azurewebsites.net)
+
+**🔑 Tài khoản Admin (để kiểm thử hệ thống online)**
+
+| Trường | Giá trị |
+|--------|---------|
+| Email | phongwary2004@gmail.com |
+| Mật khẩu | Admin123 |
 
 ---
 

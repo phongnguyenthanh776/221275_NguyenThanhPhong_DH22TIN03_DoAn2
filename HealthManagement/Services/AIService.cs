@@ -1,5 +1,6 @@
 using HealthManagement.Models;
 using System.Diagnostics;
+using System.ComponentModel;
 using System.Net.Http.Headers;
 using System.Text.Json;
 
@@ -625,42 +626,246 @@ namespace HealthManagement.Services
 
         private string ResolvePythonExecutable()
         {
+            foreach (var candidate in GetPythonExecutableCandidates())
+            {
+                if (IsPythonExecutableUsable(candidate))
+                {
+                    return candidate;
+                }
+
+                if (TryRepairMovedVirtualEnvironment(candidate) && IsPythonExecutableUsable(candidate))
+                {
+                    _logger.LogInformation("✅ Repaired venv and selected Python executable: {PythonExecutable}", candidate);
+                    return candidate;
+                }
+            }
+
+            _logger.LogWarning("⚠️ Could not find a runnable Python executable. Falling back to `python` from PATH.");
+            return "python";
+        }
+
+        private IEnumerable<string> GetPythonExecutableCandidates()
+        {
+            var seen = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+
             var configured = _configuration["AISettings:PythonExecutable"];
             if (!string.IsNullOrWhiteSpace(configured))
             {
                 if (Path.IsPathRooted(configured))
                 {
-                    return configured;
+                    foreach (var item in AddCandidate(configured)) yield return item;
                 }
-
-                var resolvedConfigured = Path.GetFullPath(Path.Combine(Directory.GetCurrentDirectory(), configured));
-                if (File.Exists(resolvedConfigured))
+                else if (configured.Contains(Path.DirectorySeparatorChar) || configured.Contains(Path.AltDirectorySeparatorChar))
                 {
-                    return resolvedConfigured;
+                    var resolvedConfigured = Path.GetFullPath(Path.Combine(Directory.GetCurrentDirectory(), configured));
+                    foreach (var item in AddCandidate(resolvedConfigured)) yield return item;
                 }
-
-                if (!configured.Contains(Path.DirectorySeparatorChar) && !configured.Contains(Path.AltDirectorySeparatorChar))
+                else
                 {
-                    return configured;
+                    foreach (var item in AddCandidate(configured)) yield return item;
                 }
             }
 
-            var candidates = new[]
+            var defaults = new[]
             {
                 Path.GetFullPath(Path.Combine(Directory.GetCurrentDirectory(), "..", ".venv", "Scripts", "python.exe")),
                 Path.GetFullPath(Path.Combine(Directory.GetCurrentDirectory(), ".venv", "Scripts", "python.exe")),
-                Path.GetFullPath(Path.Combine(Directory.GetCurrentDirectory(), "..", "AIModel", "venv", "Scripts", "python.exe"))
+                Path.GetFullPath(Path.Combine(Directory.GetCurrentDirectory(), "..", "AIModel", "venv", "Scripts", "python.exe")),
+                "python"
             };
 
-            foreach (var candidate in candidates)
+            foreach (var candidate in defaults)
             {
-                if (File.Exists(candidate))
-                {
-                    return candidate;
-                }
+                foreach (var item in AddCandidate(candidate)) yield return item;
             }
 
-            return "python";
+            IEnumerable<string> AddCandidate(string? value)
+            {
+                if (string.IsNullOrWhiteSpace(value))
+                {
+                    yield break;
+                }
+
+                if (seen.Add(value))
+                {
+                    yield return value;
+                }
+            }
+        }
+
+        private bool IsPythonExecutableUsable(string executablePath)
+        {
+            try
+            {
+                var startInfo = new ProcessStartInfo
+                {
+                    FileName = executablePath,
+                    Arguments = "--version",
+                    UseShellExecute = false,
+                    CreateNoWindow = true,
+                    RedirectStandardOutput = true,
+                    RedirectStandardError = true
+                };
+
+                using var process = Process.Start(startInfo);
+                if (process == null)
+                {
+                    return false;
+                }
+
+                if (!process.WaitForExit(3000))
+                {
+                    try
+                    {
+                        process.Kill(entireProcessTree: true);
+                    }
+                    catch
+                    {
+                        // Ignore kill failures for probe process.
+                    }
+                    return false;
+                }
+
+                return process.ExitCode == 0;
+            }
+            catch (Win32Exception)
+            {
+                return false;
+            }
+            catch (FileNotFoundException)
+            {
+                return false;
+            }
+            catch
+            {
+                return false;
+            }
+        }
+
+        private bool TryRepairMovedVirtualEnvironment(string pythonExecutablePath)
+        {
+            try
+            {
+                if (string.IsNullOrWhiteSpace(pythonExecutablePath) || !Path.IsPathRooted(pythonExecutablePath))
+                {
+                    return false;
+                }
+
+                if (!pythonExecutablePath.EndsWith($"{Path.DirectorySeparatorChar}Scripts{Path.DirectorySeparatorChar}python.exe", StringComparison.OrdinalIgnoreCase))
+                {
+                    return false;
+                }
+
+                var scriptsDirectory = Path.GetDirectoryName(pythonExecutablePath);
+                if (string.IsNullOrWhiteSpace(scriptsDirectory))
+                {
+                    return false;
+                }
+
+                var venvDirectory = Directory.GetParent(scriptsDirectory)?.FullName;
+                if (string.IsNullOrWhiteSpace(venvDirectory))
+                {
+                    return false;
+                }
+
+                var pyvenvConfigPath = Path.Combine(venvDirectory, "pyvenv.cfg");
+                if (!File.Exists(pyvenvConfigPath))
+                {
+                    return false;
+                }
+
+                var homePython = ReadHomePythonFromPyvenvConfig(pyvenvConfigPath);
+                if (string.IsNullOrWhiteSpace(homePython) || !File.Exists(homePython))
+                {
+                    _logger.LogWarning("⚠️ Cannot repair venv because base interpreter is missing: {BasePython}", homePython);
+                    return false;
+                }
+
+                if (!IsPythonExecutableUsable(homePython))
+                {
+                    _logger.LogWarning("⚠️ Base interpreter from pyvenv.cfg is not runnable: {BasePython}", homePython);
+                    return false;
+                }
+
+                _logger.LogWarning("⚠️ Detected moved/broken venv. Attempting repair: {VenvDirectory}", venvDirectory);
+
+                var repairStartInfo = new ProcessStartInfo
+                {
+                    FileName = homePython,
+                    Arguments = $"-m venv --upgrade \"{venvDirectory}\"",
+                    UseShellExecute = false,
+                    CreateNoWindow = true,
+                    RedirectStandardOutput = true,
+                    RedirectStandardError = true
+                };
+
+                using var repairProcess = Process.Start(repairStartInfo);
+                if (repairProcess == null)
+                {
+                    return false;
+                }
+
+                if (!repairProcess.WaitForExit(90000))
+                {
+                    try
+                    {
+                        repairProcess.Kill(entireProcessTree: true);
+                    }
+                    catch
+                    {
+                        // Ignore kill failures for repair process.
+                    }
+
+                    _logger.LogWarning("⚠️ Timed out while repairing venv at {VenvDirectory}", venvDirectory);
+                    return false;
+                }
+
+                if (repairProcess.ExitCode != 0)
+                {
+                    var errorOutput = repairProcess.StandardError.ReadToEnd();
+                    _logger.LogWarning("⚠️ venv repair failed with exit code {ExitCode}. Error: {Error}", repairProcess.ExitCode, errorOutput);
+                    return false;
+                }
+
+                return true;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(ex, "⚠️ Failed while attempting to repair moved venv");
+                return false;
+            }
+        }
+
+        private static string? ReadHomePythonFromPyvenvConfig(string pyvenvConfigPath)
+        {
+            try
+            {
+                var homeLine = File.ReadLines(pyvenvConfigPath)
+                    .FirstOrDefault(line => line.StartsWith("home", StringComparison.OrdinalIgnoreCase));
+
+                if (string.IsNullOrWhiteSpace(homeLine))
+                {
+                    return null;
+                }
+
+                var separatorIndex = homeLine.IndexOf('=');
+                if (separatorIndex < 0 || separatorIndex == homeLine.Length - 1)
+                {
+                    return null;
+                }
+
+                var homePath = homeLine[(separatorIndex + 1)..].Trim();
+                if (string.IsNullOrWhiteSpace(homePath))
+                {
+                    return null;
+                }
+
+                return Path.Combine(homePath, "python.exe");
+            }
+            catch
+            {
+                return null;
+            }
         }
 
         // ============================================================
